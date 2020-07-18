@@ -1,0 +1,30 @@
+{
+  "provides": {
+  },
+  "resources": [
+  ],
+  "authors": [
+    "Wenzel P. P. Peppmeyer <wenzel.peppmeyer@gmx.de>"
+  ],
+  "source-url": "https://github.com/gfldex/raku-shell-piping.git",
+  "build-depends": [
+  ],
+  "production": false,
+  "description": "",
+  "meta-version": "0",
+  "license": "Artistic-2.0",
+  "test-depends": [
+  ],
+  "perl": "6.c",
+  "version": "0.0.1",
+  "auth": "github:gfldex",
+  "support": {
+    "source": null
+  },
+  "depends": [
+    "Test::META"
+  ],
+  "tags": [
+  ],
+  "name": "Shell::Piping"
+}
