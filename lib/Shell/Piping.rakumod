@@ -373,6 +373,7 @@ multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, :$stderr? = C
 }
 
 multi infix:<|»>(Proc::Async $out, Channel:D \c, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
