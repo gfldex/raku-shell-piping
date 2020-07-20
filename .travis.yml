@@ -4,5 +4,4 @@ perl6:
     - latest
 install:
     - rakudobrew build-zef
-    - zef --verbose test .
-    - zef install .
+    - zef --verbose install .
