@@ -1,0 +1,4 @@
+#! /usr/bin/env raku
+
+sleep 0.1;
+use NativeCall; sub free(Pointer) is native {*}; free(Pointer.new(1))

@@ -1,0 +1,11 @@
+#! /usr/bin/env raku
+
+for lines() -> $l {
+    if $++ %% 3 {
+        $*ERR.put: $l;
+    } else {
+        put $l;
+    }
+}
+
+exit 1;

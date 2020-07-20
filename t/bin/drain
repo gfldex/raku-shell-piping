@@ -1,0 +1,5 @@
+#! /usr/bin/env raku
+
+use v6;
+
+lines.sort.join(„\n“).print;
