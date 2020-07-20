@@ -1,6 +1,7 @@
 #! /usr/bin/env raku
 
 use v6;
+
 my $lore = "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\n\nsed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
 $lore.split(' ').join(„\n“).print;
