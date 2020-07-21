@@ -314,6 +314,7 @@ multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, :$stderr? = CodeOrChan
 
 
 multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
@@ -335,6 +336,7 @@ multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Co
 }
 
 multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
@@ -352,6 +354,7 @@ multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? =
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Supplier:D \s, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     $pipe.done = &done;
     $pipe.stderr = $stderr with $stderr;
     $pipe.quiet = $quiet;
