@@ -215,6 +215,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Ar
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Arrayish:D \a, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $cont = $pipe.pipees.tail;
     my $fake-proc = class { 
         method write($blob) { a.push: $blob.decode.chomp } 
@@ -244,8 +245,16 @@ multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = 
     $pipe.pipees.push: $in;
     # FIXME workaround R#3778
     $in.^attributes.grep(*.name eq '$!w')[0].set_value($in, True);
+    # $pipe.starters.push: -> { 
+    #     | $in.start, start {
+    #         LEAVE try $in.close-stdin;
+    #         await $in.ready;
+    #         $in.write: „$_\n“.encode for a.list;
+    #     }
+    # }
+    $pipe.starters.push: -> { $in.start };
     $pipe.starters.push: -> { 
-        | $in.start, start {
+        start {
             LEAVE try $in.close-stdin;
             await $in.ready;
             $in.write: „$_\n“.encode for a.list;
