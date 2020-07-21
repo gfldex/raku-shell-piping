@@ -184,6 +184,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, :$stde
 }
 
 multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
@@ -200,6 +201,7 @@ multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, :$stderr? =
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Arrayish:D \a, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
+    # TEST DONE
     my $out = $pipe.pipees.tail;
     $pipe.pipees.push: a;
 
@@ -215,7 +217,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Ar
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Arrayish:D \a, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
     my $cont = $pipe.pipees.tail;
     my $fake-proc = class { 
-        method write($blob) { a.push: $blob.decode } 
+        method write($blob) { a.push: $blob.decode.chomp } 
         method ready { my $p = Promise.new; $p.keep; $p }
         method close-stdin { True }
     }.new;
@@ -231,6 +233,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
 }
 
 multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
