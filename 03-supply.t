@@ -19,6 +19,7 @@ use Shell::Piping;
     $source |» $sup-in;
     is-deeply @a[0,1,2], ("Lorem", "ipsum", "dolor"), ‚Proc::Async |» Supplier‘;
 }
+
 { #3
     my $source = Proc::Async.new: ‚t/bin/source‘;
     my $drain = Proc::Async.new: ‚t/bin/drain‘;
