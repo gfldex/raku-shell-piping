@@ -334,6 +334,23 @@ multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Co
     $pipe
 }
 
+multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    my $pipe = Shell::Pipe.new;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr with $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $out;
+    $pipe.pipees.push: s;
+    $pipe.starters.push: -> { $out.start };
+    $out.stdout.lines.tap(-> $v { 
+        s.emit($v);
+    });
+
+    $pipe
+}
+
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Supplier:D \s, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
     $pipe.done = &done;
     $pipe.stderr = $stderr with $stderr;
