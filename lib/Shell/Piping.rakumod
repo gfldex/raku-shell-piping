@@ -127,6 +127,7 @@ sub px(*@l) is export {
 }
 
 multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
@@ -163,6 +164,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
+    # TEST DONE
     $pipe.done = &done;
     $pipe.stderr = $stderr with $stderr;
     $pipe.quiet = $quiet;
