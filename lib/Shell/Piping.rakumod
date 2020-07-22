@@ -145,6 +145,7 @@ multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stder
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $blockish = $pipe.pipees.tail;
 
     $pipe.done = &done;
@@ -267,6 +268,7 @@ multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = 
 }
 
 multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
 
     $pipe.done = &done;
@@ -293,6 +295,7 @@ multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChann
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe, &c, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export {
+    # TEST DONE
     my $out = $pipe.pipees.tail;
     my $cont = Shell::Pipe::BlockContainer.new: :code(&c), :proc-out($$out), :proc-out-stdout($out.stdout);
 
@@ -310,6 +313,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe, &c, :&done? = Code, :$stderr? = CodeOrCha
 }
 
 multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) { 
+    # TEST DONE
     my $pipe = Shell::Pipe.new;
     my $cont = Shell::Pipe::BlockContainer.new: :code(&c), :proc-out($out), :proc-out-stdout($out.stdout);
 
