@@ -259,7 +259,7 @@ multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = 
         start {
             LEAVE try $in.close-stdin;
             await $in.ready;
-            $in.write: „$_\n“.encode for a.list;
+            await $in.write: „$_\n“.encode for a.list;
         }
     }
 
@@ -284,7 +284,7 @@ multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChann
             await $in.ready;
             for c() {
                 next if $_ === Nil;
-                $in.write: „$_\n“.encode;
+                await $in.write: „$_\n“.encode;
             }
         }
     }
@@ -342,7 +342,7 @@ multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Co
 
     $pipe.starters.push: -> { start {
         await $in.ready;
-        s.tap: -> $v { $in.write: „$v\n“.encode }, :done({ try $in.close-stdin }), :quit({ try $in.close-stdin });
+        s.tap: -> $v { await $in.write: „$v\n“.encode }, :done({ try $in.close-stdin }), :quit({ try $in.close-stdin });
     } };
     $pipe.starters.push: -> { $in.start };
 
@@ -397,7 +397,7 @@ multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, :$stderr? = C
 
     $pipe.starters.push: -> { start {
         for c.list -> $v {
-            $in.write: „$v\n“.encode;
+            await $in.write: „$v\n“.encode;
         }
         $in.close-stdin;
     } };
