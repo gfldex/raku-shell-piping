@@ -55,7 +55,7 @@ class Shell::Pipe is export {
     has @.pipees;
     has @.starters; # list of Callable returning Awaitable
 
-    has $.exitcode is rw = Failure.new(‚Pipe didn't produce exitcode yet.‘);
+    has $.exitcode is rw;
     has $.name is rw = "Shell::Pipe <anon>";
     has $.search-path is rw;
     has &.done is rw = Code;
@@ -90,7 +90,7 @@ class Shell::Pipe is export {
         for @proms.reverse {
             @exitcodes.push: .exitcode when Proc;
         }
-        $.exitcode = @exitcodes but (@exitcodes.all == 0 ?? False !! True);
+        $!exitcode = @exitcodes but (@exitcodes.all == 0 ?? False !! True);
         &.done.(self) with &.done;
         @proms
     }
@@ -105,6 +105,9 @@ class Shell::Pipe is export {
             when BlockContainer { „Block({.code.file.IO.basename}:{.code.line})“ }
             when Arrayish { .?name // .WHAT.gist }
         }
+    }
+    method exitcode {
+        $!exitcode // Failure.new(‚Pipe didn't produce exitcode yet.‘); 
     }
 }
 
