@@ -52,12 +52,10 @@ class Shell::Pipe is export {
         } }
     }
 
-    constant NotYet = Mu.new but role { method defined { False } };
-
     has @.pipees;
     has @.starters; # list of Callable returning Awaitable
 
-    has $.exitcode is rw = { NotYet };
+    has $.exitcode is rw = Failure.new(‚Pipe didn't produce exitcode yet.‘);
     has $.name is rw = "Shell::Pipe <anon>";
     has $.search-path is rw;
     has &.done is rw = Code;
