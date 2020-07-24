@@ -78,6 +78,8 @@ class Shell::Pipe is export {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.($index, $line) };
                     } elsif $.stderr ~~ Channel {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.send( ($index, $line) ) };
+                    } elsif $.stderr ~~ Arrayish {
+                        try $proc.stderr.lines.tap: -> $line { $.stderr.push: ($index, $line) };
                     }
                 }
             }
@@ -111,7 +113,7 @@ class Shell::Pipe is export {
         }
     }
     method exitcode {
-        $!exitcode // Failure.new(‚Pipe didn't produce exitcode yet.‘); 
+        $!exitcode // fail(‚Pipe didn't produce exitcode yet.‘); 
     }
 }
 
