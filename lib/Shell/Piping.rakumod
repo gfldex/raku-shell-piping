@@ -49,6 +49,7 @@ class Shell::Pipe is export {
                         my $value := &.code.($_);
                         my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
                         await $.proc-in.write: $processed.encode with $.proc-in;
+                      # ^^^^^ WORKAROUND for #R3817
                     }
                     $.proc-in.close-stdin with $.proc-in;
                 }
@@ -236,6 +237,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
     my $cont = $pipe.pipees.tail;
     my $fake-proc = class { 
         method write($blob) { my $p = Promise.new; $p.keep; a.push: $blob.decode.chomp; $p } 
+                            # ^^^^^^^^^^^^^^^^^^^^ WORKAROUND for R#3817
         method ready { my $p = Promise.new; $p.keep; $p }
         method close-stdin { True }
     }.new;
