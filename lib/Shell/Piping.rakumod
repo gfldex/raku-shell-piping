@@ -9,7 +9,7 @@ class X::Shell::CommandNotFound is Exception is export {
     has $.cmd;
     method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ was not found.' }
 }
-class X::Shell::NoAccess is Exception is export {
+class X::Shell::CommandNoAccess is Exception is export {
     has $.cmd;
     method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ is not accessible.' }
 }
@@ -23,17 +23,7 @@ class Shell::Pipe::Path::Container {
 }
 
 class Shell::Pipe is export {
-    class Command {
-        has $.command-path is rw;
-        has @.arguments is rw;
-        has Bool $.absolute is rw;
-        method proc {
-            Proc::Async.new: $.command-path, @.arguments
-        }
-        method CALL-ME {
-            self.proc
-        }
-    }
+    class Command { }
 
     class BlockContainer {
         has &.code;
@@ -125,20 +115,45 @@ class Shell::Pipe is export {
     }
 }
 
-sub px(*@l) is export {
-    my $command = @l.first;
-    my @arguments = @l[1..*];
-    my $in-path = not $command.contains($*SPEC.dir-sep);
-    my $command-path = $in-path ?? whereis.first(*.x) !! $command.IO;
+# sub px(*@l) is export {
+#     my $command = @l.first;
+#     my @arguments = @l[1..*];
+#     my $in-path = not $command.contains($*SPEC.dir-sep);
+#     my $command-path = $in-path ?? whereis.first(*.x) !! $command.IO;
+# 
+#     X::Shell::CommandNotFound.new(:cmd($command-path)) if !$command-path.e;
+#     X::Shell::CommandNoAccess.new(:cmd($command-path)) if !$command-path.x;
+# 
+#     # return Shell::Pipe::Command.new: :$command-path, :@arguments, :absolute(!$in-path);
+#     return Proc::Async.new: $command-path, |@arguments;
+# 
+#     sub whereis {
+#         %*ENV<PATH>.split(‚:‘).map(*.IO.add($command));
+#     }
+# }
 
-    X::Shell::CommandNotFound.new(:cmd($command-path)) if !$command-path.e;
-    X::Shell::CommandNoAccess.new(:cmd($command-path)) if !$command-path.x;
+constant px is export = Shell::Pipe::Command.new;
 
-    return Shell::Pipe::Command.new: :$command-path, :@arguments, :absolute(!$in-path);
-
+multi PX($ ($command, *@args)) {
     sub whereis {
         %*ENV<PATH>.split(‚:‘).map(*.IO.add($command));
     }
+
+    my $in-path = not $command.contains($*SPEC.dir-sep);
+    my $command-path = $in-path ?? whereis.first(*.x) !! $command.IO;
+
+    X::Shell::CommandNotFound.new(:cmd($command)).throw if !$command-path.?IO.e;
+    X::Shell::CommandNoAccess.new(:cmd($command-path)).throw if !$command-path.?IO.x;
+
+    Proc::Async.new: $command-path, |@args
+}
+
+multi postcircumfix:<{ }>(px, $arg) is export {
+    PX $arg.list
+}
+
+multi postcircumfix:<{ }>(px, @args) is export {
+    PX @args
 }
 
 multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stderr? = CodeOrChannel, Bool :$quiet?) is export { 
