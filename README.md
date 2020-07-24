@@ -2,10 +2,17 @@
 
 [![Build Status](https://travis-ci.org/gfldex/raku-shell-piping.svg?branch=master)](https://travis-ci.org/gfldex/raku-shell-piping)
 
+Shell pipes without a shell but Raku.
+
 ## SYNOPSIS
 
 ```
 use Shell::Piping;
+
+my @result;
+my $where = ‚/tmp‘;
+px«find $where» |» { /a/ ?? $_ !! Nil } |» px<sort -r> |» @result;
+.say for @result.head(10);
 ```
 
 ## LICENSE
