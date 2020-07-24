@@ -40,16 +40,42 @@ class Shell::Pipe is export {
         has $.proc-in is rw;
         has $.proc-out;
         has $.proc-out-stdout;
-        method start { start { 
-            await $.proc-out.ready;
-            await $.proc-in.ready with $.proc-in;
-            for $.proc-out-stdout.lines {
-                my $value := &.code.($_);
-                my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
-                $.proc-in.write: $processed.encode with $.proc-in;
+        method start { 
+            with $.proc-in {
+                if $.proc-in ~~ Awaitable {
+                    start { 
+                        await $.proc-out.ready;
+                        await $.proc-in.ready with $.proc-in;
+                        for $.proc-out-stdout.lines {
+                            my $value := &.code.($_);
+                            my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                            await $.proc-in.write: $processed.encode with $.proc-in;
+                        }
+                        $.proc-in.close-stdin with $.proc-in;
+                    }
+                } else {
+                    start { 
+                        await $.proc-out.ready;
+                        await $.proc-in.ready with $.proc-in;
+                        for $.proc-out-stdout.lines {
+                            my $value := &.code.($_);
+                            my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                            $.proc-in.write: $processed.encode with $.proc-in;
+                        }
+                        $.proc-in.close-stdin with $.proc-in;
+                    }
+                }
+            } else {
+                start { 
+                    await $.proc-out.ready;
+                    for $.proc-out-stdout.lines {
+                        my $value := &.code.($_);
+                        my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                    }
+                    $.proc-in.close-stdin with $.proc-in;
+                }
             }
-            $.proc-in.close-stdin with $.proc-in;
-        } }
+        }
     }
 
     has @.pipees;
