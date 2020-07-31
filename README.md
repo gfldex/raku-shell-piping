@@ -128,6 +128,71 @@ px<find /usr -iname *.txt> |» $c;
 $c |» px<sort> |» { .say };
 ```
 
+## Adverbs
+
+### `:done(&c(Shell::Pipe $pipe))`
+
+Will be called after the last command of a pipe has exited and before
+`X::Shell::NonZeroExitcode` will be thrown. The argument `$pipe` can be used
+for error handling via `.exitcodes` and introspection via `.pipees`.
+
+### `:stderr(Arrayish|Code|Channel|Capture)`
+
+This adverb redirects all STDERR into drains similar to ‚|»‘. Error text is
+processed line by line and forwarded as a pair of `(Int $index, Str $text)`.
+Whereby `$index` is the position of the pipee starting with 0.
+
+```
+px<find /usr> |» px<sort> |» @a :stderr(@err) :done({.exitcodes});
+for @err.grep({.head == 0}) {
+    say ‚find warned about: ‘, .Str;
+}
+```
+
+### `:quiet`
+
+The adverb `:quiet` will gobble up all STDERR streams and discard them.
+
+## Error handling
+
+When any `Proc::Async` in a pipe finished with a non-zero exitcode the pipe
+returns a `Failure` of `X::Shell::NonZeroExitcode`. Calling `.exitcode` on the
+pipe will mark this `Failure` as handled. The callback in `:done()` is called
+before the Failure can throw. Handling exitcodes by hand has to go there.
+Individual exitcodes of pipe commands are stored in an Array with an index that
+corresponds to the commands potision in the pipe. If STDERR output is captured
+with :stderr(Capture) the text per command is available. 
+
+```
+sub error-handler($pipe) {
+    my @a = $pipe.exitcodes;
+    for @a {
+        .command.say;
+        .exitcode.say;
+        .STDERR.say;
+    }
+}
+px«find /usr» |» px«sort» :done(&error-handler) :stderr(Capture);
+```
+
+The class `Shell::Pipe::Exitcode` supports smartmatching against `Int`, `Str`
+and `Regex`. This can be used for handling exceptions.
+
+```
+px«find /usr» |» px«sort» :stderr(Capture);
+
+CATCH {
+    when X::Shell::NonZeroExitcode { 
+        for .pipe.exitcodes {
+            when ‚find‘ & 1 & /‘(<![‘]>+)‘: Permission denied/ {
+                say „did not look in $0“;
+            }
+        }
+    }
+
+}
+```
+
 ## LICENSE
 
 All files (unless noted otherwise) can be used, modified and redistributed
