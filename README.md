@@ -24,10 +24,10 @@ custom objects. A quote construct like operator `px` is provided to create
 
 ### `px<>`, `px«»`, `px{}`
 
-This operators takes a single argument without a space between `px` and the
-argument. It will then split them on whitespaces. The first element is
+These operators take a single argument without a space between `px` and the
+argument. It will then split the argument on whitespaces. The first element is
 considered a command and the remaining elements arguments to that command.
-If a command does not contain a directory separator `%*ENV<PATH>` will be searched
+If a command does not contain a directory separator, `%*ENV<PATH>` will be searched
 for that command and the first hit used to create a `Proc::Async`. If a
 directory seperator is used the first argument is assumed to be a `IO::Path`.
 In both cases the resulting file is checked for existence and filesystem access
@@ -35,7 +35,7 @@ rights to execute it. The exceptions `X::Shell::CommandNotFound` and
 `X::Shell::CommandNoAccess` will be thrown when those tests fail. Please note
 that the file might be deleted between this check and the actual execution of
 the command. The semantics of the provided argument follow general Raku
-subscript rules. As such `px<foo bar>` and `px«foo $bar»` with generate an
+subscript rules. As such `px<foo bar>` and `px«foo $bar»` will generate an
 argument list automatically. While the code inside `px{foo, bar}` has to return
 that list by your effort.
 
@@ -194,6 +194,26 @@ CATCH {
 ```
 
 ## Exceptions
+
+CATCH {
+    when X::Shell::CommandNotFound {
+        say .cmd ~ ‚was not found‘;
+    }
+    when X::Shell::CommandNoAccess {
+        say .cmd ~ ‚was unaccessable‘;
+    }
+    when X::Shell::NonZeroExitcode {
+        for .pipe.exitcodes {
+            say .command, .exitcode, .pipe.stderr ~~ Capture ?? .STDERR !! ‚‘;
+            when ‚find‘ & 1 & /‘(<![‘]>+)‘: Permission denied/ {
+                say „did not look in $0“;
+            }
+        }
+    }
+    when X::Shell::NoExitcodeYet {
+        say .^name, „\n“, .message;
+    }
+}
 
 ### X::Shell::CommandNotFound
 
