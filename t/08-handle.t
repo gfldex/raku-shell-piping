@@ -1,5 +1,5 @@
 use Test;
-plan 2;
+plan 3;
 
 use Shell::Piping;
 
