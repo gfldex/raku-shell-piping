@@ -68,7 +68,7 @@ subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚li
 
 `Proc::Async` has its STDOUT fed line-by-line to the next element in the pipe.
 If it is a RHS argument to `|»` its STDIN is written to with the output of the
-LHS. STDERR is left untouched unless the adverb `:quiet` or `:stdout` are used.
+LHS. STDERR is left untouched unless the adverbs `:quiet` or `:stderr` are used.
 
 ```
 px<find /tmp> |» px<sort> :quiet; # equivalent to `find /tmp 2>/dev/null | sort 2>/dev/null`;

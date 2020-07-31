@@ -3,12 +3,17 @@ use v6.d;
 subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚list‘) }
 
 class X::Shell::PipeeStartFailed is Exception is export {
-    has $.command;
+    has $.cmd;
     has $.env-path;
 }
 class X::Shell::CommandNotFound is Exception is export {
     has $.cmd;
-    method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ was not found.' }
+    has $.path;
+    method message { 
+        $.path 
+            ?? „The shell command ⟨$.cmd⟩ was not found in ⟨$.path⟩.“
+            !! „The shell command ⟨$.cmd⟩ was not found.“ 
+    }
 }
 class X::Shell::CommandNoAccess is Exception is export {
     has $.cmd;
@@ -222,7 +227,7 @@ multi PX($ ($command, *@args)) {
     my $in-path = not $command.contains($*SPEC.dir-sep);
     my $command-path = $in-path ?? whereis.first(*.x) !! $command.IO;
 
-    X::Shell::CommandNotFound.new(:cmd($command)).throw if !$command-path.?IO.e;
+    X::Shell::CommandNotFound.new(:cmd($command), :path($in-path ?? %*ENV<PATH> !! Nil)).throw if !$command-path.?IO.e;
     X::Shell::CommandNoAccess.new(:cmd($command-path)).throw if !$command-path.?IO.x;
 
     Proc::Async.new: $command-path, |@args
