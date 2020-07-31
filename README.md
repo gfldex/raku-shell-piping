@@ -193,6 +193,31 @@ CATCH {
 }
 ```
 
+## Exceptions
+
+### X::Shell::CommandNotFound
+
+Will be thrown by `px«»` or when the pipe is started when the file used as a
+command is not found. The meaning of "not found" depends on the OS.
+
+### X::Shell::CommandNoAccess
+
+Will be thrown by `px«»` or when the pipe is started when the file used as a
+command exists but can not be executed. Filesystem access rights depend on the
+OS.
+
+### X::Shell::NonZeroExitcode
+
+This will be thrown after the last pipee exits and holds a `Shell::Pipe` in
+`.pipe`. If `:stderr(Capture)` is used the exception message contains all error
+text grouped by the shell command names.
+
+### X::Shell::NoExitcodeYet
+
+Will be thrown if `.exitcodes` is accessed before the pipe finished. Please
+note that filling the underlying Array is not atomic. When or after `.done` is
+called using `.exitcodes` is fine.
+
 ## LICENSE
 
 All files (unless noted otherwise) can be used, modified and redistributed
