@@ -1,48 +1,70 @@
 use Test;
-plan 8;
+plan 10;
 
 use Shell::Piping;
 
-{ #1,2
+{ #1
     my $source = Proc::Async.new: ‚t/bin/source‘;
     my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
-
-    my $ex;
     my @a;
 
-    $source |» $errorer |» @a :done({ $ex = .exitcode }) :quiet;
+    $source |» $errorer |» @a :stderr(Capture);
 
-    is-deeply $ex[0,1], $(0,1), ‚exitcode is set‘;
-    ok $ex, ‚exitcode is True‘;
+    CATCH { 
+        when X::Shell::NonZeroExitcode { 
+            for .pipe.exitcodes {
+                when ‚t/bin/errorer‘ & 1 & /adipiscing \s (\S+)/ {
+                    is $0, ‚sed‘, ‚captured STDERR and throw on non-zero exitcode‘;
+                }
+            }
+        }
+    }
 }
-{ #3,4
+{ #2..5
     my $source = Proc::Async.new: ‚t/bin/source‘;
-    my $drain = Proc::Async.new: ‚t/bin/drain‘;
-
-    my $ex;
+    my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
     my @a;
 
-    $source |» $drain |» @a :done({ $ex = .exitcode });
+    sub error-handler($pipe) {
+        my @a = $pipe.exitcodes;
+        ok @a».exitcode.any ~~ 1, ‚.exitcodes handles Failure‘;
+        ok (try @a[2] ~~ ‚t/bin/errorer‘), ‚Exitcode smartmatches against Str‘;
+        ok (try @a[2] ~~ 1),               ‚Exitcode smartmatches against Int‘;
+        ok (try @a[2] ~~ /adipiscing/),    ‚Exitcode smartmatches against Regex‘;
+    }
 
-    is-deeply $ex[0,0], $(0,0), ‚exitcode is set‘;
-    nok $ex, ‚exitcode is False‘;
-}
-{ #5
-    my $source = Proc::Async.new: ‚t/bin/source‘;
-    my $drain = Proc::Async.new: ‚t/bin/drain‘;
-
-    my $pipe = $source |» $drain;
-    isa-ok $pipe.exitcode, Failure, ‚Reading exitcode before pipe is done returns Failure.‘;
+    $source |» { $_ } |» $errorer |» @a :done(&error-handler) :stderr(Capture);
 }
 { #6
     my $source = Proc::Async.new: ‚t/bin/source‘;
-    my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
-    my @err;
+    my $drain = Proc::Async.new: ‚t/bin/drain‘;
     my @a;
-    $source |» $errorer |» @a :stderr(@err);
-    is-deeply @err[*;1][0,1,2], ("Lorem", "sit", "adipiscing"), ':stderr with Arrayish';
+
+    sub done-handler(Shell::Pipe $_) {
+        nok .exitcodes, ‚zero exitcodes is False‘;
+    }
+    $source |» $drain |» @a :done(&done-handler) :quiet;
+
+    CATCH { default { say .^name, .backtrace.Str } }
 }
 { #7
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $drain = Proc::Async.new: ‚t/bin/drain‘;
+    my @a;
+    my $pipe = $source |» $drain |» @a;
+    
+    throws-like { $pipe.exitcodes }, X::Shell::NoExitcodeYet, ‚exitcode unavailable before pipe finishes‘;
+}
+{ #8
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
+    my @a;
+    my @err;
+
+    $source |» { $_ } |» $errorer |» @a :done({.exitcodes}) :stderr(@err);
+    is-deeply @err[*;1][0,1,2], ("Lorem", "sit", "adipiscing"), ‚:stderr wit Arrayish‘;
+}
+{ #9
     my $source = Proc::Async.new: ‚t/bin/source‘;
     my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
     my @err;
@@ -50,17 +72,17 @@ use Shell::Piping;
     sub err-handler($stream, $msg) {
         @err.push: ($stream, $msg);
     }
-    $source |» $errorer |» @a :stderr(&err-handler);
+    $source |» $errorer |» @a :stderr(&err-handler) :done({.exitcodes});
     is-deeply @err[*;1][0,1,2], ("Lorem", "sit", "adipiscing"), ':stderr with sub';
 }
-{ #8
+{ #10
     my $source = Proc::Async.new: ‚t/bin/source‘;
     my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
     my @err;
     my @a;
     my $c = Channel.new;
     $c.Supply.tap: -> \v { @err.push: v }; 
-    $source |» $errorer |» @a :stderr($c);
+    $source |» $errorer |» @a :stderr($c) :done({.exitcodes});
     $c.close;
     is-deeply @err[*;1][0,1,2], ("Lorem", "sit", "adipiscing"), ':stderr with channel';
 }
