@@ -49,6 +49,7 @@ class Shell::Pipe is export {
     class BlockContainer {
         has &.code;
         has $.proc-in is rw;
+        has $.file-in is rw;
         has $.proc-out;
         has $.proc-out-stdout;
         method start { 
@@ -60,18 +61,28 @@ class Shell::Pipe is export {
                         my $value := &.code.($_);
                         my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
                         await $.proc-in.write: $processed.encode with $.proc-in;
-                        # ^^^^^ WORKAROUND for #R3817
+                      # ^^^^^ WORKAROUND for #R3817
                     }
                     $.proc-in.close-stdin with $.proc-in;
                 }
             } else {
-                start { 
-                    await $.proc-out.ready;
-                    for $.proc-out-stdout.lines {
-                        my $value := &.code.($_);
-                        my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                with $.file-in {
+                    start {
+                        for $.proc-out-stdout.lines {
+                            my $value := &.code.($_);
+                            my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                            $.file-in.write: $processed.encode;
+                        }
                     }
-                    $.proc-in.close-stdin with $.proc-in;
+                } else {
+                    start { 
+                        await $.proc-out.ready;
+                        for $.proc-out-stdout.lines {
+                            my $value := &.code.($_);
+                            my $processed = $value === Nil ?? ‚‘ !! $value ~ "\n";
+                        }
+                        $.proc-in.close-stdin with $.proc-in;
+                    }
                 }
             }
         }
@@ -337,7 +348,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
     my $cont = $pipe.pipees.tail;
     my $fake-proc = class { 
         method write($blob) { my $p = Promise.new; $p.keep; a.push: $blob.decode.chomp; $p } 
-                            # ^^^^^^^^^^^^^^^^^^^^ WORKAROUND for R#3817
+                              # ^^^^^^^^^^^^^^^^^^^^ WORKAROUND for R#3817
         method ready { my $p = Promise.new; $p.keep; $p }
         method close-stdin { True }
     }.new;
@@ -550,6 +561,62 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Ch
     });
 
     $pipe
+}
+multi infix:<|»>(IO::Handle:D $file, Proc::Async $proc, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    # TEST DONE
+    my $pipe = Shell::Pipe.new;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $file;
+    $pipe.pipees.push: $proc;
+
+    $proc.bind-stdin: $file;
+
+    $pipe.starters.push: -> { $proc.start }
+
+    $pipe
+}
+
+multi infix:<|»>(IO::Path:D $path, Proc::Async $proc, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    my $pipe = $path.open() |» $proc :&done :$stderr :$quiet;
+}
+
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Handle:D $file, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    my $out = $pipe.pipees.tail;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $file;
+    $out.bind-stdout: $file;
+
+    $pipe
+}
+
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Path:D $path, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    $pipe |» $path.open(:w) :&done :$stderr :$quiet
+}
+
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Handle:D $file, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    # TEST DONE
+    my $out = $pipe.pipees.tail;
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $file;
+
+    $out.file-in = $file;
+
+    $pipe
+}
+
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Path:D $path, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+    $pipe |» $path.open(:w)
 }
 
 sub infix:«|>>»(\a, \b, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { a |» b :&done :$stderr :$quiet }

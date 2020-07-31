@@ -59,8 +59,9 @@ be wired up, started in the right order and `await`ed. In sink context the
 whole pipe will block until the last `Proc::Async` returned from its `.start`
 method.
 
-Members of a pipe can be `Proc::Async`, `Code` objects, `Channel`, `Supply` and `Array`-like
-objects. The latter are identified by a subset.
+Members of a pipe can be `Proc::Async`, `Code` objects, `Channel`, `Supply`,
+`IO::Handle`, `IO::Path` and `Array`-like objects. The latter are identified by
+a subset.
 
 ```
 subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚list‘) }
@@ -109,6 +110,14 @@ start {
 
 Promise.in(60).then: { $c.close }; # a timeout
 $c |» $sort |» px<uniq> |» { .say };
+```
+
+`IO::Path` objects are opend for reading at the begin of a pipe and for writing
+at the end. `IO::Handle` objects are expected to be open already and must be
+open for writing at the end. File handles will not be closed by the pipe.
+
+```
+px<find /tmp> |» px<sort> |» { .uc  } |» ‚/tmp/sorted.txt‘.IO :quiet;
 ```
 
 `Array`-like objects can be used at both ends of a pipe. If used as a first
@@ -218,7 +227,9 @@ CATCH {
 ### X::Shell::CommandNotFound
 
 Will be thrown by `px«»` or when the pipe is started when the file used as a
-command is not found. The meaning of "not found" depends on the OS.
+command is not found. The meaning of "not found" depends on the OS. If the
+command was searched for in %*ENV<PATH>, that pass will be shown in the
+exception message.
 
 ### X::Shell::CommandNoAccess
 
