@@ -17,7 +17,7 @@ px«find $where» |» { /a/ ?? $_ !! Nil } |» px<sort -r> |» @result;
 
 ## USAGE
 
-This module provides the operator `|»` (alised to `|>>`) to implement shell-like
+This module provides the operator `|»` (aliased to `|>>`) to implement shell-like
 piping using `Proc::Async` objects, `Code` objects, `Channel`, `Supply` and
 custom objects. A quote construct like operator `px` is provided to create
 `Proc::Async` instances.
@@ -25,11 +25,11 @@ custom objects. A quote construct like operator `px` is provided to create
 ### `px<>`, `px«»`, `px{}`
 
 These operators take a single argument without a space between `px` and the
-argument. It will then split the argument on whitespaces. The first element is
+argument. It will then split the argument on white spaces. The first element is
 considered a command and the remaining elements arguments to that command.
 If a command does not contain a directory separator, `%*ENV<PATH>` will be searched
 for that command and the first hit used to create a `Proc::Async`. If a
-directory seperator is used the first argument is assumed to be a `IO::Path`.
+directory separator is used the first argument is assumed to be a `IO::Path`.
 In both cases the resulting file is checked for existence and filesystem access
 rights to execute it. The exceptions `X::Shell::CommandNotFound` and
 `X::Shell::CommandNoAccess` will be thrown when those tests fail. Please note
@@ -47,7 +47,7 @@ $proc = px{ 'C:/WINDOWS/SYSTEM32/VIOLATE-PRIVACY'.subst('/', '\') ~ '.exe', secr
 await $proc.start;
 ```
 
-It is not the resposibility of `px` to actually do anthing with the resulting
+It is not the resposibility of `px` to actually do anything with the resulting
 `Proc::Async` instance.
 
 ### `multi infix:<|»>` and `multi infix:«|>>»`
@@ -77,7 +77,7 @@ px<find /tmp> |» px<sort> :quiet; # equivalent to `find /tmp 2>/dev/null | sort
 
 `Code` objects can be used at any place in a pipe. The semantics however vary.
 At the beginning of a pipe the object has to return an Iterable or implement
-`.list`. It will be called once and iternated over its return value. As such we
+`.list`. It will be called once and iterated over its return value. As such we
 support `gather/take`, sequence operators and many buildins. Each value returned
 from an iteration will be added a newline, encoded as utf8 and fed to the next
 member of the pipe. If a code object is in the middle of a pipe it will be
@@ -96,7 +96,7 @@ px<find /tmp> |» { .say } :quiet;
 `Channel` and `Supplier`/`Supply` can be used at the start and end of a pipe.
 If they are closed, the entire pipe will have STDIN/STDOUT closed. This allows
 a pipe to be controlled from the outside. Any case to complex for a `Code`
-object should therefor be handled with a `Channel`.
+object should therefore be handled with a `Channel`.
 
 ```
 my $c = Channel.new;
@@ -112,7 +112,7 @@ Promise.in(60).then: { $c.close }; # a timeout
 $c |» $sort |» px<uniq> |» { .say };
 ```
 
-`IO::Path` objects are opend for reading at the begin of a pipe and for writing
+`IO::Path` objects are opened for reading at the begin of a pipe and for writing
 at the end. `IO::Handle` objects are expected to be open already and must be
 open for writing at the end. File handles will not be closed by the pipe.
 
@@ -147,9 +147,10 @@ for error handling via `.exitcodes` and introspection via `.pipees`.
 
 ### `:stderr(Arrayish|Code|Channel|Capture)`
 
-This adverb redirects all STDERR into drains similar to ‚|»‘. Error text is
-processed line by line and forwarded as a pair of `(Int $index, Str $text)`.
-Whereby `$index` is the position of the pipee starting with 0.
+This adverb redirects all STDERR into objects similar to what ‚|»‘ accepts.
+Error text is processed line by line and forwarded as a pair of `(Int $index,
+Str $text)`.  Whereby `$index` is the position of the pipee producing the text
+starting with 0.
 
 ```
 px<find /usr> |» px<sort> |» @a :stderr(@err) :done({.exitcodes});
@@ -169,8 +170,9 @@ returns a `Failure` of `X::Shell::NonZeroExitcode`. Calling `.exitcode` on the
 pipe will mark this `Failure` as handled. The callback in `:done()` is called
 before the Failure can throw. Handling exitcodes by hand has to go there.
 Individual exitcodes of pipe commands are stored in an Array with an index that
-corresponds to the commands potision in the pipe. If STDERR output is captured
-with :stderr(Capture) the text per command is available. 
+corresponds to the commands position in the pipe. If STDERR output is captured
+with :stderr(Capture). The text per command is available, again as a list of
+`($idx, $text)`. 
 
 ```
 sub error-handler($pipe) {
@@ -204,6 +206,7 @@ CATCH {
 
 ## Exceptions
 
+```
 CATCH {
     when X::Shell::CommandNotFound {
         say .cmd ~ ‚was not found‘;
@@ -223,17 +226,18 @@ CATCH {
         say .^name, „\n“, .message;
     }
 }
+```
 
 ### X::Shell::CommandNotFound
 
-Will be thrown by `px«»` or when the pipe is started when the file used as a
+Will be thrown by `px«»` or when the pipe is started if the file used as a
 command is not found. The meaning of "not found" depends on the OS. If the
-command was searched for in %*ENV<PATH>, that pass will be shown in the
+command was searched for in `%*ENV<PATH>`, that path will be shown in the
 exception message.
 
 ### X::Shell::CommandNoAccess
 
-Will be thrown by `px«»` or when the pipe is started when the file used as a
+Will be thrown by `px«»` or when the pipe is started if the file used as a
 command exists but can not be executed. Filesystem access rights depend on the
 OS.
 
