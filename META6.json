@@ -28,6 +28,6 @@
   "resources": [
   ],
   "auth": "github:gfldex",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "meta-version": "0"
 }
