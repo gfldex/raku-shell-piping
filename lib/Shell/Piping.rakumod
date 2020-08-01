@@ -39,7 +39,7 @@ class X::Shell::CommandNotFound does Exception::Refinable is export {
         }
         $.path 
             ?? „The shell command ⟨$.cmd⟩ was not found in ⟨$.path⟩.“
-            !! „The shell command ⟨$.cmd⟩ was not found.“ 
+            !! „The shell command ⟨$.cmd⟩ was not found.“
     }
 }
 class X::Shell::CommandNoAccess is Exception::Refinable is export {
@@ -48,7 +48,7 @@ class X::Shell::CommandNoAccess is Exception::Refinable is export {
     method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ is not accessible.' }
 }
 
-class X::Shell::NonZeroExitcode is Exception is export { 
+class X::Shell::NonZeroExitcode is Exception is export {
     has $.pipe;
     method message {
         my @failers = $.pipe.exitcodes.grep(*.exitcode != 0);
@@ -160,9 +160,19 @@ class Shell::Pipe is export {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.send( ($index, $line) ) };
                     } elsif $.stderr ~~ Capture {
                         try $proc.stderr.lines.tap: -> $line { $.captured-stderr.push: ($index, $line) };
+                    } elsif $.stderr ~~ IO::Handle {
+                        try $proc.stderr.lines.tap: -> $line { 
+                            $.stderr.put: now.DateTime.Str, ' ', $index, ' ', $line;
+                        };
+                    } elsif $.stderr ~~ IO::Path {
+                        $.stderr = open $.stderr, :w;
+                        try $proc.stderr.lines.tap: -> $line { 
+                            $.stderr.put: now.DateTime.Str, ' ', $index, ' ', $line;
+                        };
                     } elsif $.stderr ~~ Arrayish {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.push: ($index, $line) };
                     }
+
                 }
             }
         } elsif $.quiet {

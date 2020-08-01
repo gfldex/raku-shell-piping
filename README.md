@@ -159,7 +159,7 @@ Will be called after the last command of a pipe has exited and before
 `X::Shell::NonZeroExitcode` will be thrown. The argument `$pipe` can be used
 for error handling via `.exitcodes` and introspection via `.pipees`.
 
-### `:stderr(Arrayish|Code|Channel|Capture)`
+### `:stderr(Arrayish|Code|Channel|IP::Path|IP::Handle|Capture)`
 
 This adverb redirects all STDERR into objects similar to what ‚|»‘ accepts.
 Error text is processed line by line and forwarded as a pair of `(Int $index,
@@ -172,6 +172,10 @@ for @err.grep({.head == 0}) {
     say ‚find warned about: ‘, .Str;
 }
 ```
+
+To log to a file `:stderr()` takes an `IO::Handle` that is open for writing or a
+`IO::Path` that will be opened for writing. To close the handle call
+`.stderr.close` in the `:done()` callback.
 
 ### `:quiet`
 
