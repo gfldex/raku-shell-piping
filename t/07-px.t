@@ -22,7 +22,7 @@ is-deeply $source.args, [<1 2 3>], ‚px command with arguments‘;
 #4
 throws-like { px<not-there> }, X::Shell::CommandNotFound, ‚px X::Shell::CommandNotFound‘;
 #5
-throws-like { px<./t/07-px.t> }, X::Shell::CommandNoAccess, ‚px X::Shell::CommandNotFound‘;
+throws-like { px<./t/07-px.t> }, X::Shell::CommandNoAccess, ‚px X::Shell::CommandNoAccess‘;
 
 #6
 my $arg = ‚answer‘;
