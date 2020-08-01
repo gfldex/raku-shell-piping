@@ -2,20 +2,48 @@ use v6.d;
 
 subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚list‘) }
 
-class X::Shell::PipeeStartFailed is Exception is export {
+role Exception::Refinable is Exception is export {
+    multi method refine(::?CLASS:U: &conditional, &message) {
+        self.WHO::<@refinements>.push: &conditional, &message;
+    }
+    multi method refine(::?CLASS:U: :$revert-all!) {
+        self.WHO::<@refinements>.splice(0, *);
+    }
+    multi method refine(::?CLASS:U: &to-remove, :$revert!) {
+        for self.WHO::<@refinements>.kv -> $idx, &c {
+            if &c === &to-remove {
+                self.WHO::<@refinements>.splice($idx, 2);
+                last;
+            }
+        }
+    }
+    method refinements {
+        self.WHO::<@refinements>
+    }
+}
+
+class X::Shell::PipeeStartFailed is export {
     has $.cmd;
     has $.env-path;
 }
-class X::Shell::CommandNotFound is Exception is export {
+
+class X::Shell::CommandNotFound does Exception::Refinable is export {
+    our @refinements;
     has $.cmd;
     has $.path;
-    method message { 
+    method message {
+        for @refinements -> &cond, &message {
+            if cond(self) {
+                return message(self);
+            }
+        }
         $.path 
             ?? „The shell command ⟨$.cmd⟩ was not found in ⟨$.path⟩.“
             !! „The shell command ⟨$.cmd⟩ was not found.“ 
     }
 }
-class X::Shell::CommandNoAccess is Exception is export {
+class X::Shell::CommandNoAccess is Exception::Refinable is export {
+    our @refinements;
     has $.cmd;
     method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ is not accessible.' }
 }

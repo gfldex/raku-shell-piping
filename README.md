@@ -228,6 +228,29 @@ CATCH {
 }
 ```
 
+### Refining Exceptions
+
+The exceptions `X::Shell::CommandNotFound` and `X::Shell::CommandNoAccess` are
+refinable. This means the error message can be tweaked with the class method
+`.refine`. This method takes two `Callable`s. When `.message` is called with
+the exception instance and expected to return `Bool`. On `True` the 2nd
+callback is called with the exception instance and supposed to return a text.
+This text will be used instead of the default text and returned from
+`.message`. Replacing this message will act on the class and even on created
+but yet to be thrown exceptions.
+
+´´´
+X::Shell::CommandNotFound.refine(
+    (my &b = {.cmd eq ‚raku‘}),
+    { ‚Please install Rakudo with `apt install rakudo`.‘ }
+);
+X::Shell::CommandNotFound.refine(&b, :revert);
+X::Shell::CommandNotFound.refine(:revert-all);
+´´´
+
+The method `.revert` also takes one `Callabel` and the adverb `:revert` to
+remove one refinement or all refinements with `:revert-all`.
+
 ### X::Shell::CommandNotFound
 
 Will be thrown by `px«»` or when the pipe is started if the file used as a
