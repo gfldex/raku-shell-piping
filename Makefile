@@ -1,8 +1,10 @@
+TESTER := $(shell whereis raku-test-all zef | cut -d ' ' -f 2 -s | head -n 1)
+
 install-deps:
 	zef --depsonly install .
 
 test: install-deps
-	zef --verbose test .
+	$(TESTER) --verbose test .
 
 install:
 	zef install .
