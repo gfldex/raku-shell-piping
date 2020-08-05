@@ -159,7 +159,7 @@ Will be called after the last command of a pipe has exited and before
 `X::Shell::NonZeroExitcode` will be thrown. The argument `$pipe` can be used
 for error handling via `.exitcodes` and introspection via `.pipees`.
 
-### `:stderr(Arrayish|Code|Channel|IP::Path|IP::Handle|Capture)`
+### `:stderr(Arrayish|Code|Channel|IO::Path|IO::Handle|Capture)`
 
 This adverb redirects all STDERR into objects similar to what ‚|»‘ accepts.
 Error text is processed line by line and forwarded as a pair of `(Int $index,
@@ -189,7 +189,7 @@ pipe will mark this `Failure` as handled. The callback in `:done()` is called
 before the Failure can throw. Handling exitcodes by hand has to go there.
 Individual exitcodes of pipe commands are stored in an Array with an index that
 corresponds to the commands position in the pipe. If STDERR output is captured
-with :stderr(Capture). The text per command is available, again as a list of
+with `:stderr(Capture)`. The text per command is available, again as a list of
 `($idx, $text)`. 
 
 ```
@@ -257,14 +257,14 @@ This text will be used instead of the default text and returned from
 `.message`. Replacing this message will act on the class and even on created
 but yet to be thrown exceptions.
 
-´´´
+```
 X::Shell::CommandNotFound.refine(
     (my &b = {.cmd eq ‚raku‘}),
     { ‚Please install Rakudo with `apt install rakudo`.‘ }
 );
 X::Shell::CommandNotFound.refine(&b, :revert);
 X::Shell::CommandNotFound.refine(:revert-all);
-´´´
+```
 
 The method `.revert` also takes one `Callabel` and the adverb `:revert` to
 remove one refinement or all refinements with `:revert-all`.
