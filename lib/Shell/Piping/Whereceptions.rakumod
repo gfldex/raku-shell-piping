@@ -20,14 +20,14 @@ class X::IO::FileNotExecutable is Exception is export {
     }
 }
 
-our &it-is-a-file = -> IO(Str) $_ {
+our &it-is-a-file = -> IO::Path() $_ {
     .e && .f || fail (X::IO::FileNotFound.new(:path(.Str)))
 }
 
-our &it-is-a-directory = -> IO(Str) $_ {
+our &it-is-a-directory = -> IO::Path() $_ {
     .d || fail (X::IO::DirectoryNotFound.new(:path(.Str)))
 }
 
-our &it-is-executable = -> IO(Str) $_ {
+our &it-is-executable = -> IO::Path() $_ {
     .x || fail (X::IO::FileNotExecutable.new(:path(.Str)))
 }
