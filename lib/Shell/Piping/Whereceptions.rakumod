@@ -1,3 +1,5 @@
+use v6.d;
+
 class X::IO::FileNotFound is Exception is export {
     has $.path;
     method message {
@@ -11,9 +13,9 @@ class X::IO::DirectoryNotFound is Exception is export {
         „The directory ⟨$.path⟩ was not found.“
     }
 }
-class X::IO::FileNotExecutable is Excetopn is export {
+class X::IO::FileNotExecutable is Exception is export {
     has $.path;
-    message {
+    method message {
         „The file ⟨$.path⟩ is not executable.“
     }
 }
