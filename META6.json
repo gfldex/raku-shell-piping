@@ -1,6 +1,7 @@
 {
   "provides": {
-    "Shell::Piping": "lib/Shell/Piping.rakumod"
+    "Shell::Piping": "lib/Shell/Piping.rakumod",
+    "Shell::Piping::Whereceptions": "lib/Shell/Piping/Whereceptions"
   },
   "test-depends": [
   ],
