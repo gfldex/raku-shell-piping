@@ -29,6 +29,6 @@
   "resources": [
   ],
   "auth": "github:gfldex",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "meta-version": "0"
 }
