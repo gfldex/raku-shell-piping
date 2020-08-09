@@ -4,23 +4,30 @@ INIT my $colour = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
 
 sub RED($str) { $*ERR.t && $colour ?? „\e[31m$str\e[0m“ !! $str }
 
-class X::IO::FileNotFound is Exception is export {
-    has $.path;
-    method message {
-        RED „The file ⟨$.path⟩ was not found.“
+class X::Whereception is Exception is export {
+    has $.stale-symlink is rw;
+    method is-dangling-symlink {
+        $.stale-symlink = do with $.path { .IO.l & !.IO.e };
     }
 }
 
-class X::IO::DirectoryNotFound is Exception is export {
+class X::IO::FileNotFound is X::Whereception is export {
     has $.path;
     method message {
-        RED „The directory ⟨$.path⟩ was not found.“
+        RED $.is-dangling-symlink ?? „The file ⟨$.path⟩ is a dangling symlink.“ !! „The file ⟨$.path⟩ was not found.“
     }
 }
-class X::IO::FileNotExecutable is Exception is export {
+
+class X::IO::DirectoryNotFound is X::Whereception is export {
     has $.path;
     method message {
-        RED „The file ⟨$.path⟩ is not executable.“
+        RED $.is-dangling-symlink ?? „The directory ⟨$.path⟩ is a dangling symlink.“ !! „The directory ⟨$.path⟩ was not found.“
+    }
+}
+class X::IO::FileNotExecutable is X::Whereception is export {
+    has $.path;
+    method message {
+        RED $.is-dangling-symlink ?? „The executable ⟨$.path⟩ is a dangling symlink.“ !! „The file ⟨$.path⟩ is not executable.“
     }
 }
 
