@@ -321,7 +321,6 @@ sub works-with-directories(IO::Path(Str) $dir where &it-is-a-directory) {
 sub will-shell-out(IO::Path(Str) $file where &it-is-executable) {
     px<find -iname '42'> |» px«$file» |» (my @stdout);
 }
-
 ```
 
 ### `sub it-is-a-file(IO() $f)`
