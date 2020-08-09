@@ -294,6 +294,48 @@ Will be thrown if `.exitcodes` is accessed before the pipe finished. Please
 note that filling the underlying Array is not atomic. When or after `.done` is
 called using `.exitcodes` is fine.
 
+# Wherecetions
+
+Are subs to be used in where clauses to test for conditions that would throw
+later on. Whereceptions will output to STDERR in red unless
+`%*ENV<SHELLPIPINGNOCOLOR>` is set to any value. When sensible there will be
+checks for dangling symlinks and an alternate error message will be returned by
+the exceptions. All exceptions are subclasses of `X::IO::Whereception`.
+
+## SYNOPSIS
+
+```
+sub works-with-files(IO::Path(Str) $file where &it-is-a-file) {
+    say ‚answer‘ for $file.lines.grep(42);
+}
+
+sub works-with-directories(IO::Path(Str) $dir where &it-is-a-directory) {
+    for $dir {
+        .&works-with-files when .IO.f;
+        .IO.dir()».&?BLOCK when .IO.d;
+    }
+}
+
+}
+
+sub will-shell-out(IO::Path(Str) $file where &it-is-executable) {
+    px<find -iname '42'> |» px«$file» |» (my @stdout);
+}
+
+```
+
+### `sub it-is-a-file(IO() $f)`
+
+Will call `.e` and `.f` and throw `X::IO::FileNotFound`.
+
+### `sub it-is-a-directory(IO() $d)`
+
+Will call `.d` and throw `X::IO::DirectoryNotFound`.
+
+### `sub it-is-executable(IO() $exec)`
+
+Will call `.x` and throw `X::IO::FileNotExecutable`.
+
 ## LICENSE
 
 All files (unless noted otherwise) can be used, modified and redistributed
