@@ -85,12 +85,8 @@ class Shell::Pipe is export {
 
     use MONKEY-TYPING;
     augment class Switch {
-        method ACCEPTS(Mu:D \b) { self.WHICH eqv b.WHICH }
-    }
-
-    our sub check-dynvar(Mu \dynvar) is raw {
-        dynvar.WHAT =:= Switch or die(„{dynvar.VAR.name} set to unexpected value“);
-        dynvar
+        multi method ACCEPTS(Mu:D \b) { self.WHICH eqv b.WHICH }
+        multi method ACCEPTS(Any:_ \b) { False }
     }
 
     class BlockContainer {
@@ -170,14 +166,14 @@ class Shell::Pipe is export {
     has Bool $.quiet is rw; # divert STDERR away from terminal
 
     method start {
-        if $.stderr !~~ Whatever || check-dynvar($*always-capture-stderr) ~~ on {
+        if $.stderr !~~ Whatever || try $*always-capture-stderr ~~ on {
             for @.pipees.kv -> $index, $proc {
                 if $proc ~~ Proc::Async {
                     if $.stderr ~~ Code {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.($index, $line) };
                     } elsif $.stderr ~~ Channel {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.send( ($index, $line) ) };
-                    } elsif $.stderr ~~ Capture or $*always-capture-stderr ~~ on {
+                    } elsif $.stderr ~~ Capture or try $*always-capture-stderr ~~ on {
                         try $proc.stderr.lines.tap: -> $line { $.captured-stderr.push: ($index, $line) };
                     } elsif $.stderr ~~ IO::Handle {
                         try $proc.stderr.lines.tap: -> $line { 
