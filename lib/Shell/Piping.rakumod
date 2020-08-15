@@ -160,14 +160,14 @@ class Shell::Pipe is export {
     has Bool $.quiet is rw; # divert STDERR away from terminal
 
     method start {
-        if $.stderr !~~ Whatever || $*always-capture-stderr ~~ on {
+        if $.stderr !~~ Whatever || try $*always-capture-stderr ~~ on {
             for @.pipees.kv -> $index, $proc {
                 if $proc ~~ Proc::Async {
                     if $.stderr ~~ Code {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.($index, $line) };
                     } elsif $.stderr ~~ Channel {
                         try $proc.stderr.lines.tap: -> $line { $.stderr.send( ($index, $line) ) };
-                    } elsif $.stderr ~~ Capture or $*always-capture-stderr ~~ on {
+                    } elsif $.stderr ~~ Capture or try $*always-capture-stderr ~~ on {
                         try $proc.stderr.lines.tap: -> $line { $.captured-stderr.push: ($index, $line) };
                     } elsif $.stderr ~~ IO::Handle {
                         try $proc.stderr.lines.tap: -> $line { 
