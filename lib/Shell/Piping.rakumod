@@ -161,7 +161,8 @@ class Shell::Pipe is export {
 
     method start {
         my $*capture-stderr = CALLERS::<$*capture-stderr> // off;
-        if $.stderr !~~ Whatever || $*always-capture-stderr ~~ on {
+        my $*quiet = CALLERS::<$*quiet> // off;
+        if $.stderr !~~ Whatever || $*capture-stderr ~~ on {
             for @.pipees.kv -> $index, $proc {
                 if $proc ~~ Proc::Async {
                     if $.stderr ~~ Code {
@@ -185,7 +186,7 @@ class Shell::Pipe is export {
 
                 }
             }
-        } elsif $.quiet {
+        } elsif $.quiet || $*quiet ~~ on {
             for @.pipees -> $proc {
                 if $proc ~~ Proc::Async {
                     try $proc.stderr.tap: -> $s {};
