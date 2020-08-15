@@ -74,7 +74,7 @@ class Shell::Pipe::Path::Container {
 class Shell::Pipe is export {
     class Command { }
 
-    class Switch is Mu {
+    class Switch {
         has $.name;
         method gist { $.name }
         method Str { die('invalid coersion') }
@@ -82,12 +82,6 @@ class Shell::Pipe is export {
     
     constant on is export := Shell::Pipe::Switch.new: :name<on>;
     constant off is export := Shell::Pipe::Switch.new: :name<off>;
-
-    use MONKEY-TYPING;
-    augment class Switch {
-        multi method ACCEPTS(Mu:D \b) { self.WHICH eqv b.WHICH }
-        multi method ACCEPTS(Any:_ \b) { False }
-    }
 
     class BlockContainer {
         has &.code;
