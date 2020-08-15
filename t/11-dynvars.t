@@ -1,11 +1,14 @@
 use v6;
 use Test;
 
-plan 3;
+plan 6;
 
 use Shell::Piping;
 
 lives-ok { $*always-capture-stderr = on; $*always-capture-stderr = off; }, ‚on and off are visible in scope‘;
+is on ~~ off, False, ‚on/off values are distinct‘;
+is on ~~ 42, False, ‚no automatic coersion to Int‘;
+dies-ok { on ~~ 'on' }, ‚no coersion to Str‘;
 
 my $source = Proc::Async.new: ‚t/bin/source‘;
 my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
