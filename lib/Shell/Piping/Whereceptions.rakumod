@@ -5,7 +5,6 @@ use Shell::Piping::Switch;
 INIT my $env-color = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
 
 sub RED($str, :$color) { 
-    dd $color;
     $*ERR.t && $color ?? „\e[31m$str\e[0m“ !! $str
 }
 
