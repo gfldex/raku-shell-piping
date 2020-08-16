@@ -1,5 +1,7 @@
 use v6.d;
 
+use Shell::Piping::Switch;
+
 subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚list‘) }
 
 role Exception::Refinable is Exception is export {
@@ -73,15 +75,6 @@ class Shell::Pipe::Path::Container {
 
 class Shell::Pipe is export {
     class Command { }
-
-    class Switch {
-        has $.name;
-        method gist { $.name }
-        method Str { die('invalid coersion') }
-    }
-    
-    constant on is export := Shell::Pipe::Switch.new: :name<on>;
-    constant off is export := Shell::Pipe::Switch.new: :name<off>;
 
     class BlockContainer {
         has &.code;
@@ -669,3 +662,11 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
 }
 
 sub infix:«|>>»(\a, \b, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { a |» b :&done :$stderr :$quiet }
+
+
+sub EXPORT {
+    %(
+        'on' => on,
+        'off' => off,
+    )
+}
