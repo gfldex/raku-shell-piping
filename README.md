@@ -294,6 +294,28 @@ Will be thrown if `.exitcodes` is accessed before the pipe finished. Please
 note that filling the underlying Array is not atomic. When or after `.done` is
 called using `.exitcodes` is fine.
 
+### Colour control
+
+Exceptions will print their error messges in red to STDERR. This can be
+controlled by `%*ENV<SHELLPIPINGNOCOLOR>` and `$*colored-exceptions`. The
+environment variable can be set to any value. The dynamic var to the exported
+symbols `on` and `off` whereby `on` is the default when the variable is not
+declared by any caller.
+
+```
+use Shell::Piping;
+use Shell::Piping::Whereceptions;
+
+sub s(IO(Str) $f where &it-is-a-file) {
+}
+
+my $*colored-exceptions = off;
+s('/foo/bar');
+
+my @a;
+px<find /tmp/> |» @a;
+```
+
 # Wherecetions
 
 Are subs to be used in where clauses to test for conditions that would throw
