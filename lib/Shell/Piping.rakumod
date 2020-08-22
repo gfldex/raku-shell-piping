@@ -2,6 +2,18 @@ use v6.d;
 
 use Shell::Piping::Switch;
 
+INIT my $env-color = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
+
+# sub RED($str, :$color) { 
+#     $*ERR.t && $color ?? „\e[31m$str\e[0m“ !! $str
+# }
+
+sub infix:<///>(\a, \b) is raw {
+    my $dyn-name = a.VAR.name;
+    my $has-outer-dynvar = CALLER::CALLERS::{$dyn-name}:exists;
+    CALLER::{$dyn-name} = $has-outer-dynvar ?? CALLER::CALLERS::{$dyn-name} !! b
+}
+
 subset Arrayish of Any where { !.isa('Code') && .^can(‚push‘) && .^can(‚list‘) }
 
 role Exception::Refinable is Exception is export {
@@ -24,12 +36,23 @@ role Exception::Refinable is Exception is export {
     }
 }
 
+role Exception::Colored is Exception is export {
+    has $.color;
+    submethod TWEAK {
+        my $*colored-exceptions /// on;
+        $!color = $*colored-exceptions ~~ on && $env-color ?? 31 !! 0;
+    }
+    method RED($str) {
+        $*ERR.t ?? ("\e[" ~ $.color ~ 'm' ~ $str ~ "\e[0m") !! $str
+    }
+}
+
 class X::Shell::PipeeStartFailed is export {
     has $.cmd;
     has $.env-path;
 }
 
-class X::Shell::CommandNotFound does Exception::Refinable is export {
+class X::Shell::CommandNotFound does Exception::Refinable is Exception::Colored is export {
     our @refinements;
     has $.cmd;
     has $.path;
@@ -39,29 +62,31 @@ class X::Shell::CommandNotFound does Exception::Refinable is export {
                 return message(self);
             }
         }
-        $.path 
+        $.RED: $.path 
             ?? „The shell command ⟨$.cmd⟩ was not found in ⟨$.path⟩.“
             !! „The shell command ⟨$.cmd⟩ was not found.“
     }
 }
-class X::Shell::CommandNoAccess is Exception::Refinable is export {
+class X::Shell::CommandNoAccess does Exception::Refinable is Exception::Colored is export {
     our @refinements;
     has $.cmd;
-    method message { 'The shell command ⟨' ~ $.cmd ~ '⟩ is not accessible.' }
-}
-
-class X::Shell::NonZeroExitcode is Exception is export {
-    has $.pipe;
-    method message {
-        my @failers = $.pipe.exitcodes.grep(*.exitcode != 0);
-        'Pipe terminated with non-zero exitcode.' ~ „\n“ ~ (@failers».command Z~ „:\n“ xx * Z~ @failers».Str».indent(2)).join(„\n“)
+    method message { 
+        $.RED: 'The shell command ⟨' ~ $.cmd ~ '⟩ is not accessible.' 
     }
 }
 
-class X::Shell::NoExitcodeYet is Exception is export {
+class X::Shell::NonZeroExitcode is Exception::Colored is export {
     has $.pipe;
     method message {
-        ‚Pipe did not produce exitcode yet.‘
+        my @failers = $.pipe.exitcodes.grep(*.exitcode != 0);
+        $.RED('Pipe terminated with non-zero exitcode.') ~ „\n“ ~ (@failers».command Z~ „:\n“ xx * Z~ @failers».Str».indent(2)).join(„\n“)
+    }
+}
+
+class X::Shell::NoExitcodeYet is Exception::Colored is export {
+    has $.pipe;
+    method message {
+        $.RED: ‚Pipe did not produce exitcode yet.‘
     }
 }
 
