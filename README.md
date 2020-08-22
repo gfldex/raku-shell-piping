@@ -296,11 +296,11 @@ called using `.exitcodes` is fine.
 
 ### Colour control
 
-Exceptions will print their error messges in red to STDERR. This can be
-controlled by `%*ENV<SHELLPIPINGNOCOLOR>` and `$*colored-exceptions`. The
-environment variable can be set to any value. The dynamic var to the exported
-symbols `on` and `off` whereby `on` is the default when the variable is not
-declared by any caller.
+Exceptions will print their error messges in red to STDERR if send to a
+terminal. This can be controlled by `%*ENV<SHELLPIPINGNOCOLOR>` and
+`$*colored-exceptions`. The environment variable can be set to any value. The
+dynamic variable to the exported symbols `on` and `off` whereby `on` is the
+default when the variable is not declared by any caller.
 
 ```
 use Shell::Piping;
