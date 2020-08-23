@@ -179,7 +179,14 @@ To log to a file `:stderr()` takes an `IO::Handle` that is open for writing or a
 
 ### `:quiet`
 
-The adverb `:quiet` will gobble up all STDERR streams and discard them.
+The adverb `:quiet` will gobble up all STDERR streams and discard them. This
+can be made the default by setting `$*quiet` to the exported symbol `on`.
+
+```
+my $*quiet = on;
+my @a;
+px<find -iname *.raku> |» @a;
+```
 
 ## Error handling
 
