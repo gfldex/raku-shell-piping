@@ -64,6 +64,25 @@ await $proc.start;
 It is not the resposibility of `px` to actually do anything with the resulting
 `Proc::Async` instance.
 
+The adverb `:timeout(Numerical)` takes seconds with fractions and kills the
+spawned process when at least this time has passed. If the adverb is used
+`Proc::Async::Timeout` will be returned instead of `Proc::Async`. When the
+timeout is hit `X::Proc::Async::Timeout` will be thrown.
+
+```
+my @a;
+
+loop {
+    (px<curl https://www.raku.org>:timeout(60)) |» @a;
+    last;
+    CATCH {
+        when X::Proc::Async::Timeout {
+            put „{.command} timed out. Trying again and again and again.“;
+        }
+    }
+}
+```
+
 ### `multi infix:<|»>` and `multi infix:«|>>»`
 
 The MMD candidates of this operator take two arguments and return a
