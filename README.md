@@ -197,7 +197,8 @@ before the Failure can throw. Handling exitcodes by hand has to go there.
 Individual exitcodes of pipe commands are stored in an Array with an index that
 corresponds to the commands position in the pipe. If STDERR output is captured
 with `:stderr(Capture)`. The text per command is available, again as a list of
-`($idx, $text)`. 
+`($idx, $text)`. This can be made the default by setting `$*capture-stderr` to
+the exported symbol `on`.
 
 ```
 sub error-handler($pipe) {
