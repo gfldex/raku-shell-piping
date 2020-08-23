@@ -52,6 +52,10 @@ class X::Shell::PipeeStartFailed is export {
     has $.env-path;
 }
 
+sub is-dangling-symlink(IO(Str) $_) {
+    .l && !.e
+}
+
 class X::Shell::CommandNotFound does Exception::Refinable is Exception::Colored is export {
     our @refinements;
     has $.cmd;
@@ -62,9 +66,11 @@ class X::Shell::CommandNotFound does Exception::Refinable is Exception::Colored 
                 return message(self);
             }
         }
-        $.RED: $.path 
+        $.RED: $.path
             ?? „The shell command ⟨$.cmd⟩ was not found in ⟨$.path⟩.“
-            !! „The shell command ⟨$.cmd⟩ was not found.“
+            !! $.cmd.&is-dangling-symlink 
+                ?? „The shell command ⟨$.cmd⟩ is a dangling symlink.“
+                !! „The shell command ⟨$.cmd⟩ was not found.“
     }
 }
 class X::Shell::CommandNoAccess does Exception::Refinable is Exception::Colored is export {
