@@ -1,5 +1,6 @@
 use v6.d;
 
+use Proc::Async::Timeout;
 use Shell::Piping::Switch;
 
 INIT my $env-color = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
@@ -303,7 +304,7 @@ INIT {
 
 constant px is export = Shell::Pipe::Command.new;
 
-multi PX($ ($command, *@args)) {
+multi PX($ ($command, *@args), :$timeout = ∞) {
     sub whereis {
         %*ENV<PATH>.split(‚:‘).map(*.IO.add($command));
     }
@@ -314,15 +315,19 @@ multi PX($ ($command, *@args)) {
     X::Shell::CommandNotFound.new(:cmd($command), :path($in-path ?? %*ENV<PATH> !! Nil)).throw if !$command-path.?IO.e;
     X::Shell::CommandNoAccess.new(:cmd($command-path)).throw if !$command-path.?IO.x;
 
-    Proc::Async.new: $command-path, |@args
+    class Timeout {
+        has $.timeout;
+    }
+
+    Proc::Async::Timeout.new($command-path, |@args) but Timeout.new(:$timeout)
 }
 
-multi postcircumfix:<{ }>(px, $arg) is export {
-    PX $arg.list
+multi postcircumfix:<{ }>(px, $arg, Numeric :$timeout = ∞) is export {
+    PX $arg.list, :$timeout
 }
 
-multi postcircumfix:<{ }>(px, @args) is export {
-    PX @args
+multi postcircumfix:<{ }>(px, @args, Numeric :$timeout = ∞) is export {
+    PX @args, :$timeout
 }
 
 multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
@@ -335,7 +340,7 @@ multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stder
 
     $pipe.pipees.append: $out, $in;
     $pipe.starters.append: -> {
-        $in.start, $out.start 
+        $in.start(:timeout($in.?Timeout.timeout)), $out.start(:timeout($out.?Timeout.timeout))
     }
 
     $in.bind-stdin: $out.stdout;
@@ -357,7 +362,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
 
     $pipe.pipees.push: $in;
     $pipe.starters.append: -> {
-        $in.start
+        $in.start(:timeout($in.?Timeout.timeout))
     }
 
     $pipe
@@ -375,7 +380,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, :$stde
     given $out {
         when Proc::Async { 
             $in.bind-stdin: .stdout;
-            $pipe.starters.push: -> { $in.start };
+            $pipe.starters.push: -> { $in.start(:timeout($in.?Timeout.timeout)) };
         }
         when Arrayish { 
             fail "Arrayish not at the tail or head of a pipe.";
@@ -397,7 +402,7 @@ multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, :$stderr? =
     $pipe.pipees.push: a;
 
     $out.stdout.lines.tap(-> \e { a.push: e });
-    $pipe.starters.push(-> { $out.start });
+    $pipe.starters.push(-> { $out.start(:timeout($out.?Timeout.timeout)) });
 
     $pipe
 }
@@ -448,7 +453,7 @@ multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = 
     $pipe.pipees.push: $in;
     # FIXME workaround R#3778
     $in.^attributes.grep(*.name eq '$!w')[0].set_value($in, True);
-    $pipe.starters.push: -> { $in.start };
+    $pipe.starters.push: -> { $in.start(:timeout($in.?Timeout.timeout)) };
     $pipe.starters.push: -> { 
         start {
             LEAVE try $in.close-stdin;
@@ -474,7 +479,7 @@ multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, B
     $in.^attributes.grep(*.name eq '$!w')[0].set_value($in, True);
 
     $pipe.starters.push: -> {
-        | $in.start, start {
+        | $in.start(:timeout($in.?Timeout.timeout)), start {
             LEAVE try $in.close-stdin;
             await $in.ready;
             for c() {
@@ -517,7 +522,7 @@ multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, :$stderr? = Whatever, 
     $pipe.pipees.push: $out;
     $pipe.pipees.push: $cont;
 
-    $pipe.starters.push: -> { $out.start; }
+    $pipe.starters.push: -> { $out.start(:timeout($out.?Timeout.timeout)); }
     $pipe.starters.push: -> { $cont.start; };
 
     $pipe;
@@ -541,7 +546,7 @@ multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Wh
         await $in.ready;
         s.tap: -> $v { await $in.write: „$v\n“.encode }, :done({ try $in.close-stdin }), :quit({ try $in.close-stdin });
     } };
-    $pipe.starters.push: -> { $in.start };
+    $pipe.starters.push: -> { $in.start(:timeout($in.?Timeout.timeout)) };
 
     $pipe
 }
@@ -556,7 +561,7 @@ multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? =
 
     $pipe.pipees.push: $out;
     $pipe.pipees.push: s;
-    $pipe.starters.push: -> { $out.start };
+    $pipe.starters.push: -> { $out.start(:timeout($out.?Timeout.timeout)) };
     $out.stdout.lines.tap(-> $v { 
         s.emit($v);
     });
@@ -598,7 +603,7 @@ multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, :$stderr? = W
         }
         $in.close-stdin;
     } };
-    $pipe.starters.push: -> { $in.start };
+    $pipe.starters.push: -> { $in.start(:timeout($in.?Timeout.timeout)) };
 
     $pipe
 }
