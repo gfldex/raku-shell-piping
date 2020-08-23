@@ -274,7 +274,8 @@ remove one refinement or all refinements with `:revert-all`.
 Will be thrown by `px«»` or when the pipe is started if the file used as a
 command is not found. The meaning of "not found" depends on the OS. If the
 command was searched for in `%*ENV<PATH>`, that path will be shown in the
-exception message.
+exception message. This exception also checks for dangling symlinks and
+provides an alternate error message for this case.
 
 ### X::Shell::CommandNoAccess
 
