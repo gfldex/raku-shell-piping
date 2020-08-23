@@ -319,7 +319,9 @@ multi PX($ ($command, *@args), :$timeout = ∞) {
         has $.timeout;
     }
 
-    Proc::Async::Timeout.new($command-path, |@args) but Timeout.new(:$timeout)
+    $timeout ~~ Inf
+        ?? Proc::Async.new($command-path, |@args)
+        !! Proc::Async::Timeout.new($command-path, |@args) but Timeout.new(:$timeout)
 }
 
 multi postcircumfix:<{ }>(px, $arg, Numeric :$timeout = ∞) is export {
