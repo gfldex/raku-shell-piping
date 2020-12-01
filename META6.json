@@ -1,37 +1,38 @@
 {
-  "provides": {
-    "Shell::Piping": "lib/Shell/Piping.rakumod",
-    "Shell::Piping::Whereceptions": "lib/Shell/Piping/Whereceptions.rakumod",
-    "Shell::Piping::Switch": "lib/Shell/Piping/Switch.rakumod"
-  },
-  "test-depends": [
+  "auth": "github:gfldex",
+  "authors": [
+    "Wenzel P. P. Peppmeyer <wenzel.peppmeyer@gmx.de>"
   ],
-  "production": false,
-  "license": "Artistic-2.0",
-  "tags": [ 
-      "shell",
-      "operator"
+  "build-depends": [
   ],
-  "support": {
-    "source": null
-  },
   "depends": [
     "Test::META",
     "Proc::Async::Timeout",
     "eigenstates"
   ],
-  "name": "Shell::Piping",
   "description": "Shell pipes without a shell but Raku.",
+  "license": "Artistic-2.0",
+  "meta-version": "0",
+  "name": "Shell::Piping",
   "perl": "6.c",
-  "source-url": "https://github.com/gfldex/raku-shell-piping.git",
-  "build-depends": [
-  ],
-  "authors": [
-    "Wenzel P. P. Peppmeyer <wenzel.peppmeyer@gmx.de>"
-  ],
+  "production": true,
+  "provides": {
+    "Shell::Piping": "lib/Shell/Piping.rakumod",
+    "Shell::Piping::Switch": "lib/Shell/Piping/Switch.rakumod",
+    "Shell::Piping::Whereceptions": "lib/Shell/Piping/Whereceptions.rakumod"
+  },
+  "raku": null,
   "resources": [
   ],
-  "auth": "github:gfldex",
-  "version": "0.6.0",
-  "meta-version": "0"
+  "source-url": "https://github.com/gfldex/raku-shell-piping/archive/raku-shell-piping-0.7.0.tar.gz",
+  "support": {
+    "source": null
+  },
+  "tags": [
+    "shell",
+    "operator"
+  ],
+  "test-depends": [
+  ],
+  "version": "0.7.0"
 }
