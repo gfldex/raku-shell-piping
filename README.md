@@ -196,6 +196,14 @@ To log to a file `:stderr()` takes an `IO::Handle` that is open for writing or a
 `IO::Path` that will be opened for writing. To close the handle call
 `.stderr.close` in the `:done()` callback.
 
+Multiple targets for the STDERR stream can be provides with a `Junction`. For
+now only `&` junctions are supported. All targets will receive the same lines
+of text. Where by no particular order should be assumed.
+
+```
+px<find /usr> |» px<sort> |» @a :stderr('logfile.txt'.IO & @err & Capture);
+```
+
 ### `:quiet`
 
 The adverb `:quiet` will gobble up all STDERR streams and discard them. This
