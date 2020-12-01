@@ -4,4 +4,5 @@ perl6:
     - latest
 install:
     - rakudobrew build-zef
+    - zef install https://github.com/jonathanstowe/Test-META.git
     - zef --verbose install .
