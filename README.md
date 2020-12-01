@@ -198,7 +198,7 @@ To log to a file `:stderr()` takes an `IO::Handle` that is open for writing or a
 
 Multiple targets for the STDERR stream can be provides with a `Junction`. For
 now only `&` junctions are supported. All targets will receive the same lines
-of text. Where by no particular order should be assumed.
+of text. Whereby no particular order should be assumed.
 
 ```
 px<find /usr> |» px<sort> |» @a :stderr('logfile.txt'.IO & @err & Capture);
