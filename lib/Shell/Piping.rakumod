@@ -1,5 +1,6 @@
 use v6.d;
 
+use eigenstates;
 use Proc::Async::Timeout;
 use Shell::Piping::Switch;
 
@@ -189,28 +190,32 @@ class Shell::Pipe is export {
         my $*quiet = CALLERS::<$*quiet> // off;
         if $.stderr !~~ Whatever || $*capture-stderr ~~ on {
             for @.pipees.kv -> $index, $proc {
+                my @listener;
                 if $proc ~~ Proc::Async {
-                    if $.stderr ~~ Code {
-                        try $proc.stderr.lines.tap: -> $line { $.stderr.($index, $line) };
-                    } elsif $.stderr ~~ Channel {
-                        try $proc.stderr.lines.tap: -> $line { $.stderr.send( ($index, $line) ) };
-                    } elsif $.stderr ~~ Capture or $*capture-stderr ~~ on {
-                        try $proc.stderr.lines.tap: -> $line { $.captured-stderr.push: ($index, $line) };
-                    } elsif $.stderr ~~ IO::Handle {
-                        try $proc.stderr.lines.tap: -> $line { 
-                            $.stderr.put: now.DateTime.Str, ' ', $index, ' ', $line;
-                        };
-                    } elsif $.stderr ~~ IO::Path {
-                        $.stderr = open $.stderr, :w;
-                        try $proc.stderr.lines.tap: -> $line { 
-                            $.stderr.put: now.DateTime.Str, ' ', $index, ' ', $line;
-                        };
-                    } elsif $.stderr ~~ Arrayish {
-                        try $proc.stderr.lines.tap: -> $line { $.stderr.push: ($index, $line) };
+                    for eigenstates($.stderr) -> $stderr {
+                        if $stderr ~~ Code {
+                            @listener.push: -> $line { $stderr.($index, $line) };
+                        } elsif $stderr ~~ Channel {
+                            @listener.push: -> $line { $stderr.send( ($index, $line) ) };
+                        } elsif $stderr ~~ Capture or $*capture-stderr ~~ on {
+                            @listener.push: -> $line { $.captured-stderr.push: ($index, $line) };
+                        } elsif $stderr ~~ IO::Handle {
+                            @listener.push: -> $line { $stderr.put: now.DateTime.Str, ' ', $index, ' ', $line; };
+                        } elsif $stderr ~~ IO::Path {
+                            once $stderr = open $stderr, :w;
+                            @listener.push: -> $line { $stderr.put: now.DateTime.Str, ' ', $index, ' ', $line; };
+                        } elsif $stderr ~~ Arrayish {
+                            @listener.push: -> $line { $stderr.push: ($index, $line) };
+                        }
                     }
 
                 }
+
+                try $proc.stderr.lines.tap: -> $line {
+                    .($line) for @listener;
+                }
             }
+
         } elsif $.quiet || $*quiet ~~ on {
             for @.pipees -> $proc {
                 if $proc ~~ Proc::Async {
@@ -222,7 +227,7 @@ class Shell::Pipe is export {
         my @proms = await(do for @.starters.reverse -> &c { |c });
         for @proms.reverse.kv -> $idx, $v {
             when $v ~~ Proc {
-                my $STDERR := @.captured-stderr.map({ .head == $idx ?? .tail !! Empty }).join(„\n“) if $.stderr ~~ Capture;
+                my $STDERR := @.captured-stderr.map({ .head == $idx ?? .tail !! Empty }).join(„\n“);
                 @!exitcodes[$idx] = Exitcode.new(:exitcode($v.exitcode), :command($v.command.head), :$STDERR);
             }
             default {
@@ -332,7 +337,7 @@ multi postcircumfix:<{ }>(px, @args, Numeric :$timeout = ∞) is export {
     PX @args, :$timeout
 }
 
-multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
+multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, Mu :$stderr? = Whatever, Bool :$quiet?) is export { 
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -350,7 +355,7 @@ multi infix:<|»>(Proc::Async:D $out, Proc::Async:D $in, :&done? = Code, :$stder
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $blockish = $pipe.pipees.tail;
 
@@ -370,7 +375,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
+multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
     # TEST DONE
     $pipe.done = &done;
     $pipe.stderr = $stderr;
@@ -392,7 +397,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, :$stde
     $pipe
 }
 
-multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
+multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -409,7 +414,7 @@ multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, :$stderr? =
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Arrayish:D \a, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
     # TEST DONE
     my $out = $pipe.pipees.tail;
     $pipe.pipees.push: a;
@@ -423,7 +428,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Ar
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Arrayish:D \a, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $cont = $pipe.pipees.tail;
     my $fake-proc = class { 
@@ -443,7 +448,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
     $pipe
 }
 
-multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { 
+multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -467,7 +472,7 @@ multi infix:<|»>(Arrayish:D \a, Proc::Async:D $in, :&done? = Code, :$stderr? = 
     $pipe
 }
 
-multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -494,7 +499,7 @@ multi infix:<|»>(&c, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, B
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe, &c, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe, &c, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $out = $pipe.pipees.tail;
     my $cont = Shell::Pipe::BlockContainer.new: :code(&c), :proc-out($$out), :proc-out-stdout($out.stdout);
@@ -512,7 +517,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe, &c, :&done? = Code, :$stderr? = Whatever,
     $pipe
 }
 
-multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) { 
+multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) { 
     # TEST DONE
     my $pipe = Shell::Pipe.new;
     my $cont = Shell::Pipe::BlockContainer.new: :code(&c), :proc-out($out), :proc-out-stdout($out.stdout);
@@ -531,7 +536,7 @@ multi infix:<|»>(Proc::Async:D $out, &c, :&done? = Code, :$stderr? = Whatever, 
 }
 
 
-multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -553,7 +558,7 @@ multi infix:<|»>(Supply:D \s, Proc::Async:D $in, :&done? = Code, :$stderr? = Wh
     $pipe
 }
 
-multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -571,7 +576,7 @@ multi infix:<|»>(Proc::Async:D $out, Supplier:D \s, :&done? = Code, :$stderr? =
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Supplier:D \s, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Supplier:D \s, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     $pipe.done = &done;
     $pipe.stderr = $stderr;
@@ -586,7 +591,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Su
     $pipe
 }
 
-multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -610,7 +615,7 @@ multi infix:<|»>(Channel:D \c, Proc::Async:D $in, :&done? = Code, :$stderr? = W
     $pipe
 }
 
-multi infix:<|»>(Proc::Async $out, Channel:D \c, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Proc::Async $out, Channel:D \c, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -627,7 +632,7 @@ multi infix:<|»>(Proc::Async $out, Channel:D \c, :&done? = Code, :$stderr? = Wh
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Channel:D \c, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Channel:D \c, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     $pipe.done = &done;
     $pipe.stderr = $stderr;
@@ -642,7 +647,7 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Ch
 
     $pipe
 }
-multi infix:<|»>(IO::Handle:D $file, Proc::Async $proc, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(IO::Handle:D $file, Proc::Async $proc, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $pipe = Shell::Pipe.new;
 
@@ -660,11 +665,11 @@ multi infix:<|»>(IO::Handle:D $file, Proc::Async $proc, :&done? = Code, :$stder
     $pipe
 }
 
-multi infix:<|»>(IO::Path:D $path, Proc::Async $proc, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(IO::Path:D $path, Proc::Async $proc, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     my $pipe = $path.open() |» $proc :&done :$stderr :$quiet;
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Handle:D $file, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Handle:D $file, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     my $out = $pipe.pipees.tail;
 
     $pipe.done = &done;
@@ -677,11 +682,11 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Path:D $path, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Path:D $path, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     $pipe |» $path.open(:w) :&done :$stderr :$quiet
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Handle:D $file, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Handle:D $file, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     # TEST DONE
     my $out = $pipe.pipees.tail;
     $pipe.done = &done;
@@ -695,11 +700,11 @@ multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::Bl
     $pipe
 }
 
-multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Path:D $path, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export {
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, IO::Path:D $path, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
     $pipe |» $path.open(:w)
 }
 
-sub infix:«|>>»(\a, \b, :&done? = Code, :$stderr? = Whatever, Bool :$quiet?) is export { a |» b :&done :$stderr :$quiet }
+sub infix:«|>>»(\a, \b, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { a |» b :&done :$stderr :$quiet }
 
 
 sub EXPORT {

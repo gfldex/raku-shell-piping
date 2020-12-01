@@ -17,7 +17,8 @@
   },
   "depends": [
     "Test::META",
-    "Proc::Async::Timeout"
+    "Proc::Async::Timeout",
+    "eigenstates"
   ],
   "name": "Shell::Piping",
   "description": "Shell pipes without a shell but Raku.",

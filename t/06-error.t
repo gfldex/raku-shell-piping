@@ -1,5 +1,5 @@
 use Test;
-plan 10;
+plan 11;
 
 use Shell::Piping;
 
@@ -85,4 +85,23 @@ use Shell::Piping;
     $source |» $errorer |» @a :stderr($c) :done({.exitcodes});
     $c.close;
     is-deeply @err[*;1][0,1,2], ("Lorem", "sit", "adipiscing"), ':stderr with channel';
+}
+{ #11
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
+    my @err;
+    my @a;
+    my $c = Channel.new;
+    $c.Supply.tap: -> \v { @err.push: v }; 
+    $source |» $errorer |» @a :stderr($c & Capture);
+    $c.close;
+    CATCH { 
+        when X::Shell::NonZeroExitcode { 
+            for .pipe.exitcodes {
+                when ‚t/bin/errorer‘ & 1 & /adipiscing \s (\S+)/ {
+                    ok ($0 eq ‚sed‘) && (@err[*;1][0,1,2] ~~ ("Lorem", "sit", "adipiscing")), ‚captured STDERR and Channel‘;
+                }
+            }
+        }
+    }
 }
