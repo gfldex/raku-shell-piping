@@ -204,6 +204,9 @@ of text. Whereby no particular order should be assumed.
 px<find /usr> |» px<sort> |» @a :stderr('logfile.txt'.IO & @err & Capture);
 ```
 
+The value `Capture` can have an `Int` mixed in to limit capturing to the last n
+lines.
+
 ### `:quiet`
 
 The adverb `:quiet` will gobble up all STDERR streams and discard them. This
