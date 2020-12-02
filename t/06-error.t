@@ -1,5 +1,5 @@
 use Test;
-plan 11;
+plan 12;
 
 use Shell::Piping;
 
@@ -100,6 +100,23 @@ use Shell::Piping;
             for .pipe.exitcodes {
                 when ‚t/bin/errorer‘ & 1 & /adipiscing \s (\S+)/ {
                     ok ($0 eq ‚sed‘) && (@err[*;1][0,1,2] ~~ ("Lorem", "sit", "adipiscing")), ‚captured STDERR and Channel‘;
+                }
+            }
+        }
+    }
+}
+{ #12
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $errorer = Proc::Async.new: ‚t/bin/errorer‘;
+    my @a;
+
+    $source |» $errorer |» @a :stderr(Capture but 2);
+
+    CATCH { 
+        when X::Shell::NonZeroExitcode { 
+            for .pipe.exitcodes {
+                when ‚t/bin/errorer‘ & 1  {
+                    is .Str, "labore\nmagna", ‚captured STDERR with a limit‘;
                 }
             }
         }

@@ -198,7 +198,14 @@ class Shell::Pipe is export {
                         } elsif $stderr ~~ Channel {
                             @listener.push: -> $line { $stderr.send( ($index, $line) ) };
                         } elsif $stderr ~~ Capture or $*capture-stderr ~~ on {
-                            @listener.push: -> $line { $.captured-stderr.push: ($index, $line) };
+                            if my $limit = $stderr.?Int {
+                                @listener.push: -> $line { 
+                                    @.captured-stderr.push: ($index, $line);
+                                    @.captured-stderr.shift if @.captured-stderr > $limit;
+                                };
+                            } else {
+                                @listener.push: -> $line { @.captured-stderr.push: ($index, $line) };
+                            }
                         } elsif $stderr ~~ IO::Handle {
                             @listener.push: -> $line { $stderr.put: now.DateTime.Str, ' ', $index, ' ', $line; };
                         } elsif $stderr ~~ IO::Path {
