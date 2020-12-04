@@ -209,8 +209,8 @@ class Shell::Pipe is export {
                         } elsif $stderr ~~ IO::Handle {
                             @listener.push: -> $line { $stderr.put: now.DateTime.Str, ' ', $index, ' ', $line; };
                         } elsif $stderr ~~ IO::Path {
-                            once $stderr = open $stderr, :w;
-                            @listener.push: -> $line { $stderr.put: now.DateTime.Str, ' ', $index, ' ', $line; };
+                            once my $err = open $stderr, :w;
+                            @listener.push: -> $line { $err.put: now.DateTime.Str, ' ', $index, ' ', $line; };
                         } elsif $stderr ~~ Arrayish {
                             @listener.push: -> $line { $stderr.push: ($index, $line) };
                         }
