@@ -207,6 +207,11 @@ px<find /usr> |» px<sort> |» @a :stderr('logfile.txt'.IO & @err & Capture);
 The value `Capture` can have an `Int` mixed in to limit capturing to the last n
 lines.
 
+```
+my $n = 10; # at most $n lines of STDERR are captured
+px<find /usr> |» px<sort> |» @a :stderr(Capture but $n);
+```
+
 ### `:quiet`
 
 The adverb `:quiet` will gobble up all STDERR streams and discard them. This
@@ -325,7 +330,8 @@ OS.
 
 This will be thrown after the last pipee exits and holds a `Shell::Pipe` in
 `.pipe`. If `:stderr(Capture)` is used the exception message contains all error
-text grouped by the shell command names.
+text grouped by the shell command names. When an `Int` is mixed in, only that
+many lines will be captured.
 
 ### X::Shell::NoExitcodeYet
 
