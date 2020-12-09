@@ -161,7 +161,7 @@ this object.
 ```
 class Custom {
     has @.buffer;
-    method push -> v { @.buffer.push: v; @.buffer.shift if +@.buffer > 100; self }
+    method push -> \v { @.buffer.push: v; @.buffer.shift if +@.buffer > 100; self }
     method list { @.buffer.list }
 }
 
@@ -304,7 +304,7 @@ X::Shell::CommandNotFound.refine(&b, :revert);
 X::Shell::CommandNotFound.refine(:revert-all);
 ```
 
-The method `.revert` also takes one `Callabel` and the adverb `:revert` to
+The method `.revert` also takes one `Callable` and the adverb `:revert` to
 remove one refinement or all refinements with `:revert-all`.
 
 ### X::Shell::CommandNotFound
