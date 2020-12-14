@@ -237,7 +237,7 @@ class Shell::Pipe is export {
         my $*max-exitcode-command = CALLERS::<$*max-exitcode-command> // 160;
 
         for @proms.reverse.kv -> $idx, $v {
-            sub up-to-chars(\s, $n) { s.substr(^$n) ~ (s.chars > $n ?? ‚…‘ !! ‚‘) }
+            sub up-to-chars(\s, $n where { $_ ~~ Int|Inf or fail(‚Please set $*max-exitcode-command to Int or Inf.‘) }) { s.substr(^$n) ~ (s.chars > $n ?? ‚…‘ !! ‚‘) }
             when $v ~~ Proc {
                 my $STDERR := @.captured-stderr.map({ .head == $idx ?? .tail !! Empty }).join(„\n“);
                 @!exitcodes[$idx] = Exitcode.new(:exitcode($v.exitcode), :command($v.command.join(‚ ‘).&up-to-chars($*max-exitcode-command)), :$STDERR);
