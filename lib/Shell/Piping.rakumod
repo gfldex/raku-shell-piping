@@ -3,6 +3,7 @@ use v6.d;
 use eigenstates;
 use Proc::Async::Timeout;
 use Shell::Piping::Switch;
+use Shell::Piping::Whereceptions;
 
 INIT my $env-color = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
 
@@ -672,8 +673,28 @@ multi infix:<|»>(IO::Handle:D $file, Proc::Async $proc, :&done? = Code, Mu :$st
     $pipe
 }
 
-multi infix:<|»>(IO::Path:D $path, Proc::Async $proc, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
-    my $pipe = $path.open() |» $proc :&done :$stderr :$quiet;
+multi infix:<|»>(IO::Path:D $path where &it-is-a-file, Proc::Async $proc, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    my $pipe = $path.open() |» $proc :&done :$stderr :$quiet
+}
+
+multi infix:<|»>(Proc::Async:D $out, IO::Path:D $path where &it-is-a-file, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    my $pipe = $out |» $path.open(:w) :&done :$stderr :$quiet
+}
+
+multi infix:<|»>(Proc::Async:D $out, IO::Handle:D $file, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    my $pipe = Shell::Pipe.new;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $out;
+    $pipe.pipees.push: $file;
+
+    $out.bind-stdout: $file;
+    $pipe.starters.push: -> { $out.start }
+
+    $pipe
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, IO::Handle:D $file, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
