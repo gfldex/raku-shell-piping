@@ -1,5 +1,5 @@
 use Test;
-plan 12;
+plan 14;
 
 use Shell::Piping;
 
@@ -117,6 +117,41 @@ use Shell::Piping;
             for .pipe.exitcodes {
                 when ‚t/bin/errorer‘ & 1  {
                     is .Str, "labore\nmagna", ‚captured STDERR with a limit‘;
+                }
+            }
+        }
+    }
+}
+{ #13
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $errorer = px{'t/bin/errorer', (1..100).Slip};
+    my @a;
+
+    my $*max-exitcode-command = ∞;
+    $source |» $errorer |» @a :stderr(Capture but 2);
+
+    CATCH {
+        when X::Shell::NonZeroExitcode { 
+            for .pipe.exitcodes {
+                when rx{'t/bin/errorer'} & 1  {
+                    ok .command.Str.ends-with('100'), ‚X::Shell::NonZeroExitcode with $*max-exitcode-command‘;
+                }
+            }
+        }
+    }
+}
+{ #14
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my $errorer = px{'t/bin/errorer', (1..100).Slip};
+    my @a;
+
+    $source |» $errorer |» @a :stderr(Capture but 2);
+
+    CATCH {
+        when X::Shell::NonZeroExitcode { 
+            for .pipe.exitcodes {
+                when rx{'t/bin/errorer'} & 1  {
+                    ok .command.Str.ends-with('…'), ‚Exitcode.command is clipped‘;
                 }
             }
         }

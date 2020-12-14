@@ -233,10 +233,14 @@ class Shell::Pipe is export {
         }
         # FIXME check if any Promise was broken, because a process did not start
         my @proms = await(do for @.starters.reverse -> &c { |c });
+
+        my $*max-exitcode-command = CALLERS::<$*max-exitcode-command> // 160;
+
         for @proms.reverse.kv -> $idx, $v {
+            sub up-to-chars(\s, $n) { s.substr(^$n) ~ (s.chars > $n ?? ‚…‘ !! ‚‘) }
             when $v ~~ Proc {
                 my $STDERR := @.captured-stderr.map({ .head == $idx ?? .tail !! Empty }).join(„\n“);
-                @!exitcodes[$idx] = Exitcode.new(:exitcode($v.exitcode), :command($v.command.head), :$STDERR);
+                @!exitcodes[$idx] = Exitcode.new(:exitcode($v.exitcode), :command($v.command.join(‚ ‘).&up-to-chars($*max-exitcode-command)), :$STDERR);
             }
             default {
                 @!exitcodes[$idx] = Exitcode.new(:exitcode(0), :command(@!pipees[$idx].&gist-of-pipee));
