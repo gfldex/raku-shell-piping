@@ -38,7 +38,8 @@ class X::IO::FileNotExecutable is X::Whereception is export {
 
 our &it-is-a-file = -> IO() $_ {
     my $is-colored = ($*colored-exceptions // on) ~~ on && $env-color;
-    .e && .f || fail (X::IO::FileNotFound.new(:path(.Str), :$is-colored))
+    # if it exists not a file nor a dir, it must be a device/fifo/etc so we take it
+    (.e && .f) || ( .e && !.f && !.d ) || fail (X::IO::FileNotFound.new(:path(.Str), :$is-colored))
 }
 
 our &it-is-a-directory = -> IO() $_ {
