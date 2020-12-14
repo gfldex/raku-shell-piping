@@ -333,6 +333,9 @@ This will be thrown after the last pipee exits and holds a `Shell::Pipe` in
 text grouped by the shell command names. When an `Int` is mixed in, only that
 many lines will be captured.
 
+The command line will be clipped at 180 characters. This limit can be changed
+by setting `$*max-exitcode-command` to any `Int` or `Inf`.
+
 ### X::Shell::NoExitcodeYet
 
 Will be thrown if `.exitcodes` is accessed before the pipe finished. Please
