@@ -170,6 +170,22 @@ px<find /usr -iname *.txt> |» $c;
 $c |» px<sort> |» { .say };
 ```
 
+### Slurpy list deconstruction
+
+List deconstruction is supported on the right hand side of `|»`, whereby a
+`Whatever` is required as a first or last element of the declarator list. Used
+as a first element `Whatever` indicated that elements at the beginning of the
+output are to be skipped. With `Whatever` as the last element, only the first
+n-elements are to be kept.  This is useful if you are only interested in the
+first or last few elements of the output of a script.
+
+```
+px<find /usr -iname *.txt> |» my (Whatever, $second-last, $last-line);
+px<find /usr -iname *.txt> |» out ($first-line, $, $third-line, Whatever);
+```
+
+That declarator lists don't accept `*` is a limitation of Raku (for now).
+
 ## Adverbs
 
 ### `:done(&c(Shell::Pipe $pipe))`

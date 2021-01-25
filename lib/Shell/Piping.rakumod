@@ -99,6 +99,12 @@ class X::Shell::NoExitcodeYet is Exception::Colored is export {
     }
 }
 
+class X::Shell::Piping::NeitherLeftNorRightSlurpy is Exception {
+    method message {
+        '|» List:D requires Whatever as first or last element';
+    }
+}
+
 class Shell::Pipe::Exitcode::Container is export {
     has &.callback;
 }
@@ -407,6 +413,51 @@ multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, Mu :$s
     }
 
     $pipe
+}
+
+multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    sub is-whatever($_ is raw) { .VAR.name eq 'anon' && .WHAT === Whatever }
+    sub is-anon($_ is raw) { .VAR.name eq 'anon' && .WHAT === Any }
+    sub is-scalar($_ is raw) { .VAR ~~ Scalar && .WHAT !=== Whatever && .VAR.name ne 'anon' }
+
+    sub is-left-slurpy(\l) { l.head.&is-whatever }
+    sub is-right-slurpy(\l) { l.tail.&is-whatever }
+
+    my $pipe = Shell::Pipe.new;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $out;
+    $pipe.pipees.push: l;
+
+    given l {
+        when .head.WHAT === Whatever {
+            $out.stdout.lines.tap(-> \nv {
+                for l[1..*].reverse.kv -> \k, \v {
+                    l[k+1] = l[k+2];
+                }
+                l[*-1] = nv;
+            });
+        }
+        when .tail.WHAT === Whatever {
+            my $idx = 0;
+            $out.stdout.lines.tap(-> \nv {
+               if $idx < l.elems - 1 {
+                   l[$idx++] = nv;
+               }
+            });
+        }
+        default {
+            X::Shell::Piping::NeitherLeftNorRightSlurpy.new.throw;
+        }
+    }
+
+    $pipe.starters.push(-> { $out.start(:timeout($out.?Timeout.timeout)) });
+
+    $pipe
+
 }
 
 multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
