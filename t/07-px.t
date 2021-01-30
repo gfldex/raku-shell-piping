@@ -17,7 +17,7 @@ is $source.path, './t/bin/source', ‚px single argument with $PATH lookup‘;
 
 #3
 $source = px<source 1 2 3>;
-is-deeply $source.args, [<1 2 3>], ‚px command with arguments‘;
+is-deeply $source.command[1..*], (<1 2 3>), ‚px command with arguments‘;
 
 #4
 throws-like { px<not-there> }, X::Shell::CommandNotFound, ‚px X::Shell::CommandNotFound‘;
@@ -27,7 +27,7 @@ throws-like { px<./t/07-px.t> }, X::Shell::CommandNoAccess, ‚px X::Shell::Comm
 #6
 my $arg = ‚answer‘;
 $source = px«source $arg»;
-is $source.args[0], $arg, ‚px with string substitution‘;
+is $source.command[1], $arg, ‚px with string substitution‘;
 
 #7
 $source = px{‚source‘, 41.succ};
