@@ -108,6 +108,9 @@ LHS. STDERR is left untouched unless the adverbs `:quiet` or `:stderr` are used.
 px<find /tmp> |» px<sort> :quiet; # equivalent to `find /tmp 2>/dev/null | sort 2>/dev/null`;
 ```
 
+To capture STDOUT and output to the terminal at the same time, set `$*echo` to
+`on`.
+
 `Code` objects can be used at any place in a pipe. The semantics however vary.
 At the beginning of a pipe the object has to return an Iterable or implement
 `.list`. It will be called once and iterated over its return value. As such we
@@ -185,6 +188,9 @@ px<find /usr -iname *.txt> |» out ($first-line, $, $third-line, Whatever);
 ```
 
 That declarator lists don't accept `*` is a limitation of Raku (for now).
+
+To capture STDOUT and output to the terminal at the same time, set `$*echo` to
+`on`.
 
 ## Adverbs
 

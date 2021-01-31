@@ -432,9 +432,13 @@ multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? =
     $pipe.pipees.push: $out;
     $pipe.pipees.push: l;
 
+    my $echo = CALLERS::<$*echo> ~~ on // False;
+
     given l {
         when .head.WHAT === Whatever {
             $out.stdout.lines.tap(-> \nv {
+                put nv if $echo;
+
                 for l[1..*].reverse.kv -> \k, \v {
                     l[k+1] = l[k+2];
                 }
@@ -444,9 +448,11 @@ multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? =
         when .tail.WHAT === Whatever {
             my $idx = 0;
             $out.stdout.lines.tap(-> \nv {
-               if $idx < l.elems - 1 {
-                   l[$idx++] = nv;
-               }
+                put nv if $echo;
+
+                if $idx < l.elems - 1 {
+                    l[$idx++] = nv;
+                }
             });
         }
         default {
@@ -471,7 +477,11 @@ multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, Mu :$stderr
     $pipe.pipees.push: $out;
     $pipe.pipees.push: a;
 
-    $out.stdout.lines.tap(-> \e { a.push: e });
+    my $echo = CALLERS::<$*echo> ~~ on // False;
+    $out.stdout.lines.tap(-> \e { 
+        put e if $echo;
+        a.push: e 
+    });
     $pipe.starters.push(-> { $out.start(:timeout($out.?Timeout.timeout)) });
 
     $pipe
