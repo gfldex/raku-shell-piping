@@ -14,7 +14,7 @@ my &warn = $*ERR.t
     ?? sub (*@msg) is hidden-from-backtrace {
         once my &warn-orig = ::('&CORE::warn');
     
-        $*ERR.t
+        $*ERR.t && $env-color
             ?? warn-orig("\e[0;33m", @msg, "\e[0m")
             !! warn-orig('WARN: ', @msg);
     
