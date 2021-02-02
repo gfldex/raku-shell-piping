@@ -4,4 +4,10 @@ use v6;
 
 my $lore = "Lorem ipsum dolor sit amet, consectetur adipiscing elit,\n\nsed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
-$lore.split(' ').join(„\n“).print;
+multi sub MAIN() {
+    $lore.split(' ').join(„\n“).print;
+}
+
+multi sub MAIN(1) {
+    $lore.split(' ').head.print;
+}

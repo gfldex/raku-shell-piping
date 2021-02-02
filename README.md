@@ -185,9 +185,13 @@ first or last few elements of the output of a script.
 ```
 px<find /usr -iname *.txt> |» my (Whatever, $second-last, $last-line);
 px<find /usr -iname *.txt> |» out ($first-line, $, $third-line, Whatever);
+px<find /usr -iname *.txt> |» my $first-line-only;
 ```
 
 That declarator lists don't accept `*` is a limitation of Raku (for now).
+
+A single scalar that is not `Arrayish` will have the first ouput line assigned.
+If there are more lines we `warn`.
 
 To capture STDOUT and output to the terminal at the same time, set `$*echo` to
 `on`.

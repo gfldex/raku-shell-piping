@@ -10,6 +10,16 @@ INIT my $env-color = %*ENV<SHELLPIPINGNOCOLOR>:!exists;
 # sub RED($str, :$color) { 
 #     $*ERR.t && $color ?? „\e[31m$str\e[0m“ !! $str
 # }
+my &warn = $*ERR.t
+    ?? sub (*@msg) is hidden-from-backtrace {
+        once my &warn-orig = ::('&CORE::warn');
+    
+        $*ERR.t
+            ?? warn-orig("\e[0;33m", @msg, "\e[0m")
+            !! warn-orig('WARN: ', @msg);
+    
+    }
+    !! &::('CORE::warn');
 
 sub infix:<///>(\a, \b) is raw {
     my $dyn-name = a.VAR.name;
@@ -76,6 +86,7 @@ class X::Shell::CommandNotFound does Exception::Refinable is Exception::Colored 
                 !! „The shell command ⟨$.cmd⟩ was not found.“
     }
 }
+
 class X::Shell::CommandNoAccess does Exception::Refinable is Exception::Colored is export {
     our @refinements;
     has $.cmd;
@@ -485,6 +496,30 @@ multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, Mu :$stderr
     $pipe.starters.push(-> { $out.start(:timeout($out.?Timeout.timeout)) });
 
     $pipe
+}
+
+multi infix:<|»>(Proc::Async:D $out, \s where s.VAR.WHAT === Scalar, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    my $pipe = Shell::Pipe.new;
+
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+    $pipe.pipees.push: $out;
+    $pipe.pipees.push: s;
+
+    my $echo = CALLERS::<$*echo> ~~ on // False;
+    my $line-counter = 0;
+    $out.stdout.lines.tap(-> \e {
+        put e if $echo;
+        warn($out.command[0] ~ ' did output more lines then expected.') if $line-counter == 1;
+        s = e unless $line-counter++;
+    });
+
+    $pipe.starters.push(-> { $out.start(:timeout($out.?Timeout.timeout)) });
+
+    $pipe
+
 }
 
 multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Proc::Async, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
