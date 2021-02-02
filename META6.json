@@ -24,7 +24,7 @@
   "raku": null,
   "resources": [
   ],
-  "source-url": "https://github.com/gfldex/raku-shell-piping/archive/raku-shell-piping-0.9.0.tar.gz",
+  "source-url": "https://github.com/gfldex/raku-shell-piping/archive/raku-shell-piping-0.9.1.tar.gz",
   "support": {
     "source": null
   },
@@ -34,5 +34,5 @@
   ],
   "test-depends": [
   ],
-  "version": "0.9.0"
+  "version": "0.9.1"
 }
