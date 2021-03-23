@@ -1,5 +1,5 @@
 use Test;
-plan 9;
+plan 10;
 
 use Shell::Piping;
 
@@ -71,4 +71,10 @@ class CustomObject {
     my $to-many-lines;
     $source |» my $a;
     is-deeply $a, "Lorem", ‚Proc::Async |» <deconstruction into scalar>‘;
+}
+{ #10
+    my $source = Proc::Async.new: ‚t/bin/source‘;
+    my @a;
+    $source |» { .uc } |» my (Whatever, $a, $b);
+    is-deeply ($a, $b), ("MAGNA", "ALIQUA."), ‚Proc::Async |» Block |» <left slurpy list deconstruction>‘;
 }

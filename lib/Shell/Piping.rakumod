@@ -426,13 +426,14 @@ multi infix:<|»>(Shell::Pipe:D $pipe, Proc::Async:D $in, :&done? = Code, Mu :$s
     $pipe
 }
 
-multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
-    sub is-whatever($_ is raw) { .VAR.name eq 'anon' && .WHAT === Whatever }
-    sub is-anon($_ is raw) { .VAR.name eq 'anon' && .WHAT === Any }
-    sub is-scalar($_ is raw) { .VAR ~~ Scalar && .WHAT !=== Whatever && .VAR.name ne 'anon' }
+sub is-whatever($_ is raw) { .VAR.name eq 'anon' && .WHAT === Whatever }
+sub is-anon($_ is raw) { .VAR.name eq 'anon' && .WHAT === Any }
+sub is-scalar($_ is raw) { .VAR ~~ Scalar && .WHAT !=== Whatever && .VAR.name ne 'anon' }
 
-    sub is-left-slurpy(\l) { l.head.&is-whatever }
-    sub is-right-slurpy(\l) { l.tail.&is-whatever }
+sub is-left-slurpy(\l) { l.head.&is-whatever }
+sub is-right-slurpy(\l) { l.tail.&is-whatever }
+
+multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
 
     my $pipe = Shell::Pipe.new;
 
@@ -475,6 +476,59 @@ multi infix:<|»>(Proc::Async:D $out, List:D \l where l.WHAT === List, :&done? =
 
     $pipe
 
+}
+
+multi infix:<|»>(Shell::Pipe:D $pipe where $pipe.pipees.tail ~~ Shell::Pipe::BlockContainer, List:D \l where l.WHAT === List, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export {
+    $pipe.done = &done;
+    $pipe.stderr = $stderr;
+    $pipe.quiet = $quiet;
+
+
+    my $echo = CALLERS::<$*echo> ~~ on // False;
+    my &process-line;
+
+    given l {
+        when .head.WHAT === Whatever {
+            &process-line = -> \nv {
+                put nv if $echo;
+
+                for l[1..*].reverse.kv -> \k, \v {
+                    l[k+1] = l[k+2];
+                }
+                l[*-1] = nv;
+            };
+        }
+        when .tail.WHAT === Whatever {
+            my $idx = 0;
+            &process-line = -> \nv {
+                put nv if $echo;
+
+                if $idx < l.elems - 1 {
+                    l[$idx++] = nv;
+                }
+            };
+        }
+        default {
+            X::Shell::Piping::NeitherLeftNorRightSlurpy.new.throw;
+        }
+    }
+
+    my $fake-proc = class { 
+        method write($blob) { my $p = Promise.new; $p.keep;  
+                              # ^^^^^^^^^^^^^^^^^^^^ WORKAROUND for R#3817
+                              process-line $blob.decode.chomp;
+
+                              $p 
+                          }
+        method ready { my $p = Promise.new; $p.keep; $p }
+        method close-stdin { True }
+    }.new;
+
+    my $cont = $pipe.pipees.tail;
+    $cont.proc-in = $fake-proc;
+    $pipe.pipees.push: l;
+
+    $pipe
 }
 
 multi infix:<|»>(Proc::Async:D $out, Arrayish:D \a, :&done? = Code, Mu :$stderr? is raw = Whatever, Bool :$quiet?) is export { 
